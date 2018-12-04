@@ -1,0 +1,189 @@
+﻿using System;
+using System.Linq;
+using System.Collections.Generic;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Threading;
+
+
+using InfServer.Game;
+using InfServer.Protocol;
+using InfServer.Scripting;
+using InfServer.Bots;
+
+using Assets;
+using Axiom.Math;
+using Bnoerj.AI.Steering;
+
+namespace InfServer.Script.GameType_Multi
+{   // Script Class
+    /// Provides the interface between the script and bot
+    ///////////////////////////////////////////////////////
+    public partial class Medic : Bot
+    {   ///////////////////////////////////////////////////
+        // Member Variables
+        ///////////////////////////////////////////////////
+        //private Bot _bot;							//Pointer to our bot class
+        private Random _rand;
+
+        private Player _target;                     //The player we're currently stalking
+        private Player _leader;
+        private Team _targetTeam;
+        public BotType type;
+        protected bool bOverriddenPoll;         //Do we have custom actions for poll?
+
+        protected List<Vector3> _path;			//The path to our destination
+        protected int _pathTarget;				//The next target node of the path
+        protected int _tickLastPath;			//The time at which we last made a path to the player
+        protected int _lastHeal;
+        protected int _lastEnergyRecharge;
+        protected int _energy;
+        public Conquest _cq;
+
+
+        private bool _bPatrolEnemy;
+        protected SteeringController steering;	//System for controlling the bot's steering
+        private float _seperation;
+        private int _tickNextStrafeChange;          //The last time we changed strafe direction
+        private bool _bStrafeLeft;					//Are we strafing left or right?
+
+
+        public Medic(VehInfo.Car type, Helpers.ObjectState state, Arena arena)
+            : base(type, state, arena,
+            new SteeringController(type, state, arena))
+        {
+            Random rnd = new Random();
+            _seperation = (float)rnd.NextDouble();
+            steering = _movement as SteeringController;
+            _rand = new Random();
+            if (type.InventoryItems[0] != 0)
+                _weapon.equip(AssetManager.Manager.getItemByID(type.InventoryItems[0]));
+
+            _actionQueue = new List<Action>();
+
+        }
+
+        public void init()
+        {
+            _targetTeam = _arena.ActiveTeams.FirstOrDefault(t => t != _team);
+            _energy = c_maxEnergy;
+        }
+
+
+
+        /// <summary>
+        /// Allows the script to maintain itself
+        /// </summary>
+        public override bool poll()
+        {
+            if (bOverriddenPoll)
+                return base.poll();
+
+            //Dead? Do nothing
+            if (IsDead)
+            {
+                steering.steerDelegate = null;
+                return base.poll();
+            }
+            int now = Environment.TickCount;
+
+            //Maintain our bots energy
+            if (_energy < c_maxEnergy)
+            {
+                if ((now - _lastEnergyRecharge) >= 1000)
+                {
+                    _energy += (c_energyRechargeRate / 10);
+                    _lastEnergyRecharge = now;
+
+                    if (_energy > c_maxEnergy)
+                        _energy = c_maxEnergy;
+                }
+            }
+
+
+
+            pollForActions(now);
+
+            if (_actionQueue.Count() > 0)
+            {
+                _actionQueue.OrderByDescending(a => a.priority);
+
+                Action currentAction = _actionQueue.First();
+
+                switch (currentAction.type)
+                {
+                    case Action.Type.fireAtEnemy:
+                        {
+                            fireAtEnemy(now);
+                        }
+                        break;
+                    case Action.Type.healTeam:
+                        {
+                            healTeamates(now);
+                        }
+                        break;
+
+                    case Action.Type.followTeam:
+                        {
+                            followTeamMate(now);
+                        }
+                        break;
+                }
+                _actionQueue.Remove(currentAction);
+            }
+            else
+            {
+                if (_arena._bGameRunning)
+                    patrolBetweenFlags(now);
+                else
+                    base.destroy(false, true);
+
+                //Allows the bot to update the target every poll
+                _target = null;
+            }
+
+            //Handle normal functionality
+            return base.poll();
+        }
+
+        public void updatePath(int now)
+        {
+            //Does our path need to be updated?
+            if (now - _tickLastPath > c_pathUpdateInterval)
+            {   //Are we close enough to the team?
+                if (!checkTeamDistance())
+                {
+                    _path = null;
+                    destroy(true);
+                }
+                else
+                {   //Update it!
+                    _tickLastPath = int.MaxValue;
+
+                    _arena._pathfinder.queueRequest(
+                        (short)(_state.positionX / 16), (short)(_state.positionY / 16),
+                        (short)(_target._state.positionX / 16), (short)(_target._state.positionY / 16),
+                        delegate (List<Vector3> path, int pathLength)
+                        {
+                            if (path != null)
+                            {   //Is the path too long?
+                                if (pathLength > c_MaxPath)
+                                {   //Destroy ourself and let another zombie take our place
+                                    _path = null;
+                                    destroy(true);
+                                }
+                                else
+                                {
+                                    _path = path;
+                                    _pathTarget = 1;
+                                }
+                            }
+
+                            _tickLastPath = now;
+                        }
+                    );
+                }
+            }
+        }
+    }
+}
