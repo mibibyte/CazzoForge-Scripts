@@ -181,6 +181,24 @@ namespace InfServer.Script.GameType_Multi
             _allPoints = new List<CapturePoint>();
 
 
+            _baseScript._lastSpawn = new Dictionary<string, Helpers.ObjectState>();
+
+            foreach (Player player in _team2.ActivePlayers)
+            {
+                Helpers.ObjectState lastKnown = new Helpers.ObjectState();
+                lastKnown.positionX = 20224;
+                lastKnown.positionY = 992;
+                _baseScript._lastSpawn.Add(player._alias, lastKnown);
+            }
+
+            foreach (Player player in _team1.ActivePlayers)
+            {
+                Helpers.ObjectState lastKnown = new Helpers.ObjectState();
+                lastKnown.positionX = 14512;
+                lastKnown.positionY = 1824;
+                _baseScript._lastSpawn.Add(player._alias, lastKnown);
+            }
+
 
             int flagcount = 1;
             foreach (Arena.FlagState flag in _flags)
@@ -191,7 +209,7 @@ namespace InfServer.Script.GameType_Multi
                     flag.team = cqTeam2;
                 flagcount++;
 
-                _allPoints.Add(new CapturePoint(_arena, this, flag));
+                _allPoints.Add(new CapturePoint(_arena, flag));
             }
 
             foreach (Player p in _arena.Players)
@@ -443,6 +461,44 @@ namespace InfServer.Script.GameType_Multi
         #endregion
 
         #region Player Events
+
+        /// <summary>
+        /// Triggered when a bot has died
+        /// </summary>
+        /// <param name="dead"></param>
+        /// <param name="killer"></param>
+        /// <returns></returns>
+        public bool botDeath(Bot dead, Player killer)
+        {
+            UpdateKiller(killer);
+
+            if (_savedPlayerStats.ContainsKey(killer._alias))
+            {
+                _savedPlayerStats[killer._alias].kills++;
+                long wepTick = _savedPlayerStats[killer._alias].lastUsedWepTick;
+                if (wepTick != -1)
+                    UpdateWeaponKill(killer);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Triggered when a player has died to a bot
+        /// </summary>
+        /// <param name="victim"></param>
+        /// <param name="bot"></param>
+        /// <returns></returns>
+        public bool playerDeathBot(Player victim, Bot bot)
+        {
+            UpdateDeath(victim, null);
+
+            if (_savedPlayerStats.ContainsKey(victim._alias))
+                _savedPlayerStats[victim._alias].deaths++;
+
+            return true;
+        }
+
         public bool playerUnspec(Player player)
         {
 

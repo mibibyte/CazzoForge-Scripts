@@ -52,20 +52,20 @@ namespace InfServer.Script.GameType_Multi
             if (_target == null)
                 return Vector3.Zero;
 
-            List<Vehicle> medics = _arena.getVehiclesInRange(vehicle.state.positionX, vehicle.state.positionY, 400,
+            List<Vehicle> marines = _arena.getVehiclesInRange(vehicle.state.positionX, vehicle.state.positionY, 500,
                                                                 delegate (Vehicle v)
-                                                                { return (v is Medic); });
-            IEnumerable<IVehicle> medicbots = medics.ConvertAll<IVehicle>(
+                                                                { return (v is Marine); });
+            IEnumerable<IVehicle> marinebots = marines.ConvertAll<IVehicle>(
                 delegate (Vehicle v)
                 {
-                    return (v as Medic).Abstract;
+                    return (v as Marine).Abstract;
                 }
             );
 
-            Vector3 seperationSteer = vehicle.SteerForSeparation(_seperation, -0.707f, medicbots);
+            Vector3 seperationSteer = vehicle.SteerForSeparation(_seperation, -0.707f, marinebots);
             Vector3 pursuitSteer = vehicle.SteerForPursuit(_target._baseVehicle.Abstract, 0.2f);
 
-            return (seperationSteer * 0.6f) + pursuitSteer;
+            return (seperationSteer * 1.3f) + pursuitSteer;
         }
 
         /// <summary>

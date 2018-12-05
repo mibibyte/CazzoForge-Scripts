@@ -23,7 +23,14 @@ namespace InfServer.Script.GameType_Multi
         private CfgInfo _config;                //The zone config
         private int _lastTickerUpdate;
         private int _lastKillStreakUpdate;
+        public List<Arena.FlagState> _flags;
+        private List<CapturePoint> _activePoints;
+        private List<CapturePoint> _allPoints;
+        private int _lastFlagCheck;
         public Script_Multi _baseScript;
+
+        private int _flagCaptureRadius = 250;
+        private int _flagCaptureTime = 5;
 
 
         #region Stat Recording
@@ -83,6 +90,13 @@ namespace InfServer.Script.GameType_Multi
             _arena = arena;
             _config = arena._server._zoneConfig;
             _savedPlayerStats = new Dictionary<string, PlayerStat>();
+
+            _activePoints = new List<CapturePoint>();
+            _allPoints = new List<CapturePoint>();
+
+            _bots = new List<Bot>();
+            spawnBots = true;
+
             _team = _arena.getTeamByName("Titan Militia");
             _botTeam = _arena.getTeamByName("Collective Military");
             
@@ -102,6 +116,43 @@ namespace InfServer.Script.GameType_Multi
                 UpdateKillStreaks();
                 _lastKillStreakUpdate = now;
             }
+
+            if (now - _lastFlagCheck >= 500 && _arena._bGameRunning)
+            {
+                _lastFlagCheck = now;
+
+                int team1count = _arena._flags.Values.Where(f => f.team == _team).Count();
+                int team2count = _arena._flags.Values.Where(f => f.team == _botTeam).Count();
+
+                //Has anyone won?
+                if (team1count == 0 || team2count == 0)
+                    _arena.gameEnd();
+
+                Arena.FlagState team1Flag = _arena._flags.Values.OrderByDescending(f => f.posX).Where(f => f.team == _team).First();
+                Arena.FlagState team2Flag = _arena._flags.Values.OrderBy(f => f.posX).Where(f => f.team == _botTeam).First();
+
+                int unowned = _arena._flags.Values.Where(f => f.team != _team && f.team != _botTeam).Count();
+
+                _activePoints.Clear();
+
+                if (unowned > 0)
+                {
+                    _activePoints.Add(_allPoints.FirstOrDefault(p => p._flag.team != _team && p._flag.team != _botTeam));
+                }
+                else
+                {
+                    _activePoints.Add(_allPoints.FirstOrDefault(p => p._flag == team1Flag));
+                    _activePoints.Add(_allPoints.FirstOrDefault(p => p._flag == team2Flag));
+                }
+
+                foreach (Player p in _arena.Players)
+                    Helpers.Object_Flags(p, _flags);
+            }
+
+            foreach (CapturePoint point in _activePoints)
+                point.poll(now);
+
+            pollBots(now);
         }
         #endregion
 
@@ -112,6 +163,36 @@ namespace InfServer.Script.GameType_Multi
                 return;
 
             ResetKiller(null);
+
+            _flags = _arena._flags.Values.OrderBy(f => f.posX).ToList();
+            _allPoints = new List<CapturePoint>();
+            _baseScript._lastSpawn = new Dictionary<string, Helpers.ObjectState>();
+
+
+
+            int flagcount = 1;
+            foreach (Arena.FlagState flag in _flags)
+            {
+                if (flagcount <= 1)
+                    flag.team = _team;
+                if (flagcount >= 2)
+                    flag.team = _botTeam;
+                flagcount++;
+
+                _allPoints.Add(new CapturePoint(_arena, flag));
+            }
+
+            foreach (Player p in _arena.Players)
+                Helpers.Object_Flags(p, _flags);
+
+
+            Arena.FlagState team1Flag = _flags.OrderByDescending(f => f.posX).Where(f => f.team == _team).First();
+            Arena.FlagState team2Flag = _flags.OrderBy(f => f.posX).Where(f => f.team == _botTeam).First();
+
+            _activePoints = new List<CapturePoint>();
+            _activePoints.Add(_allPoints.FirstOrDefault(p => p._flag == team1Flag));
+            _activePoints.Add(_allPoints.FirstOrDefault(p => p._flag == team2Flag));
+            _activePoints.Add(_allPoints.FirstOrDefault(p => p._flag.team == null));
 
             _savedPlayerStats.Clear();
             foreach (Player p in _arena.Players)
@@ -314,6 +395,45 @@ namespace InfServer.Script.GameType_Multi
         #endregion
 
         #region Player Events
+
+        /// <summary>
+        /// Triggered when a bot has died
+        /// </summary>
+        /// <param name="dead"></param>
+        /// <param name="killer"></param>
+        /// <returns></returns>
+        public bool botDeath(Bot dead, Player killer)
+        {
+            UpdateKiller(killer);
+
+            if (_savedPlayerStats.ContainsKey(killer._alias))
+            {
+                _savedPlayerStats[killer._alias].kills++;
+                long wepTick = _savedPlayerStats[killer._alias].lastUsedWepTick;
+                if (wepTick != -1)
+                    UpdateWeaponKill(killer);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Triggered when a player has died to a bot
+        /// </summary>
+        /// <param name="victim"></param>
+        /// <param name="bot"></param>
+        /// <returns></returns>
+        public bool playerDeathBot(Player victim, Bot bot)
+        {
+            UpdateDeath(victim, null);
+
+            if (_savedPlayerStats.ContainsKey(victim._alias))
+                _savedPlayerStats[victim._alias].deaths++;
+
+            return true;
+        }
+
+
         public bool playerUnspec(Player player)
         {
             player.unspec(_team);
@@ -465,18 +585,9 @@ namespace InfServer.Script.GameType_Multi
                 active = activeTeams;
             }
 
-            Team collie = active.Count() > 1 ? active.ElementAt(1) : _arena.getTeamByName(_config.teams[0].name);
             Team titan = active.Count() > 0 ? active.ElementAt(0) : _arena.getTeamByName(_config.teams[1].name);
 
-            string format = string.Format("{0}={1} - {2}={3}", titan._name, titan._currentGameKills, collie._name, collie._currentGameKills);
-            //We playing more events at the same time?
-            if (active.Count() > 3)
-            {
-                Team third = active.ElementAt(2);
-                Team fourth = active.ElementAt(3);
-                format = string.Format("{0}={1} - {2}={3} | {4}={5} - {6}={7}", titan._name, titan._currentGameKills, collie._name, collie._currentGameKills,
-                    third._name, third._currentGameKills, fourth._name, fourth._currentGameKills);
-            }
+            string format = string.Format("{0}={1}", titan._name, titan._currentGameKills);
             _arena.setTicker(1, 2, 0, format);
 
             //Personal Scores

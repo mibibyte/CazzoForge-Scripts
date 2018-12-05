@@ -21,15 +21,15 @@ namespace InfServer.Script.GameType_Multi
     ///////////////////////////////////////////////////////
     public partial class Marine : Bot
     {
-        public float farDist = 1.4f;                        //The distance from the player where we actively pursue them
-        public float runDist = 0.3f;                        //The distance from the player where we run away!
+        public float farDist = 3.7f;                        //The distance from the player where we actively pursue them
+        public float runDist = 2.8f;                        //The distance from the player where we run away!
         public float patrolDist = 5.1f;                     //The distance from our patrol points where we turn around and pursue the other point
         public float retreatDist = 6.1f;                     //The distance from our patrol points where we turn around and pursue the other point
-        public float fireDist = 3.5f;                      //The distance from the player where we keep our distance
+        public float fireDist = 4.8f;                      //The distance from the player where we keep our distance
         private const int c_MaxPath = 350;
         public const int c_DistanceLeeway = 500;
 
-        public const int c_pathUpdateInterval = 5500;      //The amount of ticks before a bot will renew it's path
+        public const int c_pathUpdateInterval = 8000;      //The amount of ticks before a bot will renew it's path
         public const int c_MaxRespawnDist = 1500;           //The maximum distance bots can be spawned from the players
         public const int c_playerMaxRangeEnemies = 2100;    //The max range the bot will consider enemies a threat
         public const int c_playerRangeFire = 1000;          //The range the bot will consider firing at enemies

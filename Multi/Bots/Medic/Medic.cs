@@ -38,7 +38,6 @@ namespace InfServer.Script.GameType_Multi
         protected int _lastHeal;
         protected int _lastEnergyRecharge;
         protected int _energy;
-        public Conquest _cq;
 
 
         private bool _bPatrolEnemy;

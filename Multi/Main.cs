@@ -378,24 +378,6 @@ namespace InfServer.Script.GameType_Multi
             if (_arena.ActiveTeams.Count() == 0)
                 return false;
 
-            _lastSpawn = new Dictionary<string, Helpers.ObjectState>();
-
-            foreach (Player player in _cq._team2.ActivePlayers)
-            {
-                Helpers.ObjectState lastKnown = new Helpers.ObjectState();
-                lastKnown.positionX = 20224;
-                lastKnown.positionY = 992;
-                _lastSpawn.Add(player._alias, lastKnown);
-            }
-
-            foreach (Player player in _cq._team1.ActivePlayers)
-            {
-                Helpers.ObjectState lastKnown = new Helpers.ObjectState();
-                lastKnown.positionX = 14512;
-                lastKnown.positionY = 1824;
-                _lastSpawn.Add(player._alias, lastKnown);
-            }
-
             _arena.initialHideSpawns();
 
             //Defer to our current gametype handler!
@@ -535,7 +517,6 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.Death")]
         public bool playerDeath(Player victim, Player killer, Helpers.KillType killType, CS_VehicleDeath update)
         {
-
             //Defer to our current gametype handler!
             switch (_gameType)
             {
@@ -558,8 +539,22 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.PlayerKill")]
         public bool playerPlayerKill(Player victim, Player killer)
         {
+            //Don't reward for teamkills
+            if (victim._team == killer._team)
+                Logic_Assets.RunEvent(victim, _arena._server._zoneConfig.EventInfo.killedTeam);
+            else
+            {
+                Logic_Assets.RunEvent(victim, _arena._server._zoneConfig.EventInfo.killedEnemy);
+                //Calculate rewards
+                Rewards.calculatePlayerKillRewards(victim, killer);
+            }
 
-            //Defer to our current gametype handler!
+            //Update stats
+            killer.Kills++;
+            victim.Deaths++;
+
+
+            //Now defer to our current gametype handler!
             switch (_gameType)
             {
                 case Settings.GameTypes.Conquest:
@@ -573,6 +568,58 @@ namespace InfServer.Script.GameType_Multi
                     //Do nothing
                     break;
             }
+            return false;
+        }
+
+        /// <summary>
+        /// Triggered when a bot has killed a player
+        /// </summary>
+        [Scripts.Event("Player.BotKill")]
+        public bool playerBotKill(Player victim, Bot bot)
+        {
+            //Now defer to our current gametype handler!
+            switch (_gameType)
+            {
+                case Settings.GameTypes.Conquest:
+                    _cq.playerDeathBot(victim, bot);
+                    break;
+                case Settings.GameTypes.Coop:
+                    _coop.playerDeathBot(victim, bot);
+                    break;
+
+                default:
+                    //Do nothing
+                    break;
+            }
+
+            return true;
+        }
+
+
+        /// <summary>
+        /// Triggered when a vehicle dies
+        /// </summary>
+        [Scripts.Event("Bot.Death")]
+        public bool botDeath(Bot dead, Player killer, int weaponID)
+        {
+            killer.Kills++;
+
+
+            //Now defer to our current gametype handler!
+            switch (_gameType)
+            {
+                case Settings.GameTypes.Conquest:
+                    _cq.botDeath(dead, killer);
+                    break;
+                case Settings.GameTypes.Coop:
+                    _coop.botDeath(dead, killer);
+                    break;
+
+                default:
+                    //Do nothing
+                    break;
+            }
+
             return true;
         }
 

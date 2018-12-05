@@ -22,7 +22,7 @@ namespace InfServer.Script.GameType_Multi
         private int _maxEnemyRange = 2200;
         private int _flankerLogic = 3;
         private short _enemyBuffer = 1800;
-        private Dictionary<string, Helpers.ObjectState> _lastSpawn;
+        public Dictionary<string, Helpers.ObjectState> _lastSpawn;
 
         public Helpers.ObjectState findFlagWarp(Player player)
         {
@@ -64,14 +64,14 @@ namespace InfServer.Script.GameType_Multi
             return warpPoint;
         }
 
-        public Helpers.ObjectState findFlagWarp(Team team)
+        public Helpers.ObjectState findFlagWarp(Team team, bool bBot)
         {
             Helpers.ObjectState warpPoint = null;
             List<Arena.FlagState> sortedFlags = new List<Arena.FlagState>();
 
-            if (team == _cq._team1)
+            if (team._name == "Titan Militia")
                 sortedFlags = _arena._flags.Values.OrderByDescending(f => f.posX).Where(f => f.team == team).ToList();
-            if (team == _cq._team2)
+            if (team._name == "Collective Military")
                 sortedFlags = _arena._flags.Values.OrderBy(f => f.posX).Where(f => f.team == team).ToList();
 
             int count = sortedFlags.Count;
@@ -89,9 +89,9 @@ namespace InfServer.Script.GameType_Multi
 
             if (enemies.Count() > 0)
             {
-                if (team == _cq._team1)
+                if (team._name == "Titan Militia")
                     warpPoint.positionX = (short)(sortedFlags.Last().posX - ScaleOffset());
-                if (team == _cq._team2)
+                if (team._name == "Collective Military")
                     warpPoint.positionX = (short)(sortedFlags.Last().posX + ScaleOffset());
             }
 
@@ -296,6 +296,67 @@ namespace InfServer.Script.GameType_Multi
             }
             return warpPoint;
         }
+
+
+        /// <summary>
+        /// Finds a specific point within a radius with no physics for a player to warp to
+        /// </summary>
+        /// <param name="arena"></param>
+        /// <param name="posX"></param>
+        /// <param name="posY"></param>
+        /// <param name="radius"></param>
+        /// <returns></returns>
+        public Helpers.ObjectState findOpenWarp(Team team, Arena arena, short posX, short posY, int radius)
+        {
+            Helpers.ObjectState warpPoint = null;
+
+
+            try
+            {
+                int blockedAttempts = 10;
+
+                int enemycount = _arena.getPlayersInRange(posX, posY, _engagedRadius).Where(p => p._team != team).Count();
+                if (team._name == "Titan Militia" && enemycount > 0)
+                    posX = (short)(posX - ScaleOffset());
+                if (team._name == "Collective Military" && enemycount > 0)
+                    posX = (short)(posX + ScaleOffset());
+
+
+                short pX;
+                short pY;
+
+                while (true)
+                {
+                    pX = posX;
+                    pY = posY;
+                    Helpers.randomPositionInArea(arena, radius, ref pX, ref pY);
+                    if (arena.getTile(pX, pY).Blocked)
+                    {
+                        blockedAttempts--;
+                        if (blockedAttempts <= 0)
+                            //Consider the area to be blocked
+                            return null;
+                        else
+                            continue;
+                    }
+
+                    warpPoint = new Helpers.ObjectState();
+                    warpPoint.positionX = pX;
+                    warpPoint.positionY = pY;
+
+
+                    break;
+
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.write(TLog.Exception, ex.Message);
+            }
+            return warpPoint;
+        }
+
+
 
 
         /// <summary>

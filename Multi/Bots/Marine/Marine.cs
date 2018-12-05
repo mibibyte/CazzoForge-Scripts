@@ -58,10 +58,17 @@ namespace InfServer.Script.GameType_Multi
 
             _actionQueue = new List<Action>();
 
+           
+
         }
 
         public void init()
         {
+            WeaponController.WeaponSettings settings = new WeaponController.WeaponSettings();
+            settings.aimFuzziness = 5;
+
+            _weapon.setSettings(settings);
+
             _targetTeam = _arena.ActiveTeams.FirstOrDefault(t => t != _team);
         }
 

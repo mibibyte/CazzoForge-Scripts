@@ -13,11 +13,13 @@ using Assets;
 
 namespace InfServer.Script.GameType_Multi
 {
-    public partial class Coop
+    public partial class Conquest
     {
-        private int _lastMedicSpawnTeam;
-        private int _lastMarineSpawnTeam;
-        private int _marineSpawnDelay = 20000;
+        private int _lastMedicSpawnTeam1;
+        private int _lastMedicSpawnTeam2;
+        private int _lastMarineSpawnTeam1;
+        private int _lastMarineSpawnTeam2;
+        private int _marineSpawnDelay = 120000;
         private int _medicSpawnDelay = 30000;
         public List<Bot> _bots;
         public bool spawnBots;
@@ -27,26 +29,52 @@ namespace InfServer.Script.GameType_Multi
             if (spawnBots)
             {
                 //Does team1 need a medic?
-                if (now - _lastMedicSpawnTeam > _medicSpawnDelay)
+                if (now - _lastMedicSpawnTeam1 > _medicSpawnDelay)
                 {
-                    int botcount = _bots.Where(b => b._type.Id == 128 && b._team == _botTeam).Count();
+                    int playercount = cqTeam1.ActivePlayers.Where(p => p.ActiveVehicle._type.Name.Contains("Medic")).Count();
+                    int botcount = _bots.Where(b => b._type.Id == 128 && b._team == cqTeam1).Count();
 
                     if (botcount < 2)
                     {
-                        _lastMedicSpawnTeam = now;
-                        spawnMedic(_botTeam);
+                        _lastMedicSpawnTeam1 = now;
+                        spawnMedic(cqTeam1);
                     }
                 }
-              
-                //Does team1 need a marine?
-                if (now - _lastMarineSpawnTeam > _marineSpawnDelay)
+                //Does team2 need a medic?
+                if (now - _lastMedicSpawnTeam2 > _medicSpawnDelay)
                 {
-                    int botcount = _bots.Where(b => b._type.Id == 133 && b._team == _botTeam).Count();
+                    int playercount = cqTeam2.ActivePlayers.Where(p => p.ActiveVehicle._type.Name.Contains("Medic")).Count();
+                    int botcount = _bots.Where(b => b._type.Id == 301 && b._team == cqTeam2).Count();
+
+                    if (botcount < 2)
+                    {
+                        _lastMedicSpawnTeam2 = now;
+                        spawnMedic(cqTeam2);
+                    }
+                }
+
+                //Does team1 need a marine?
+                if (now - _lastMarineSpawnTeam1 > _marineSpawnDelay)
+                {
+                    int playercount = cqTeam1.ActivePlayers.Where(p => p.ActiveVehicle._type.Name.Contains("Marine")).Count();
+                    int botcount = _bots.Where(b => b._type.Id == 133 && b._team == cqTeam1).Count();
 
                     if (botcount < 1)
                     {
-                        _lastMarineSpawnTeam = now;
-                        spawnMarine(_botTeam);
+                        _lastMarineSpawnTeam1 = now;
+                        spawnMarine(cqTeam1);
+                    }
+                }
+                //Does team2 need a marine?
+                if (now - _lastMarineSpawnTeam2 > _marineSpawnDelay)
+                {
+                    int playercount = cqTeam2.ActivePlayers.Where(p => p.ActiveVehicle._type.Name.Contains("Marine")).Count();
+                    int botcount = _bots.Where(b => b._type.Id == 131 && b._team == cqTeam2).Count();
+
+                    if (botcount < 1)
+                    {
+                        _lastMarineSpawnTeam2 = now;
+                        spawnMarine(cqTeam2);
                     }
                 }
             }
@@ -112,7 +140,7 @@ namespace InfServer.Script.GameType_Multi
 
         public void spawnMedic(Team team)
         {
-            Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(team);
+            Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(team, true);
 
             if (!newBot(team, BotType.Medic, warpPoint))
                 Log.write(TLog.Warning, "Unable to spawn medic bot");
@@ -121,7 +149,7 @@ namespace InfServer.Script.GameType_Multi
 
         public void spawnMarine(Team team)
         {
-            Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(team);
+            Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(team, true);
 
             if (!newBot(team, BotType.Marine, warpPoint))
                 Log.write(TLog.Warning, "Unable to spawn marine bot");
@@ -141,10 +169,10 @@ namespace InfServer.Script.GameType_Multi
                         ushort vehid = 301;
 
                         //Titan vehicle?
-                        if (team._name == "Titan Militia")
+                        if (team == cqTeam1)
                             vehid = 128;
 
-                        Medic medic = _arena.newBot(typeof(Medic), vehid, team, null, state) as Medic;
+                        Medic medic = _arena.newBot(typeof(Medic), vehid, team, null, state, null) as Medic;
 
                         if (medic == null)
                             return false;
@@ -169,16 +197,17 @@ namespace InfServer.Script.GameType_Multi
                         ushort vehid = 131;
 
                         //Titan vehicle?
-                        if (team._name == "Titan Militia")
+                        if (team == cqTeam1)
                             vehid = 133;
 
-                        Marine marine = _arena.newBot(typeof(Marine), vehid, team, null, state) as Marine;
+                        Marine marine = _arena.newBot(typeof(Marine), vehid, team, null, state, null) as Marine;
 
                         if (marine == null)
                             return false;
 
                         marine._team = team;
                         marine.type = BotType.Marine;
+                        marine._cq = this;
                         marine.init();
 
                         marine.Destroyed += delegate (Vehicle bot)
@@ -193,7 +222,6 @@ namespace InfServer.Script.GameType_Multi
 
 
             }
-            _arena.triggerMessage(0, 500, "Enemy reinforcements have arrived!");
             return true;
         }
     }

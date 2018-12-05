@@ -103,9 +103,9 @@ namespace InfServer.Script.GameType_Multi
         {
             Arena.FlagState enemyFlag;
             if (_team._name == "Titan Militia")
-                enemyFlag = _cq._flags.Where(f => f.team != _team).First();
+                enemyFlag = _arena._flags.Values.Where(f => f.team != _team).First();
             else
-                enemyFlag = _cq._flags.Where(f => f.team != _team).Last();
+                enemyFlag = _arena._flags.Values.Where(f => f.team != _team).Last();
             
 
             Helpers.ObjectState target = new Helpers.ObjectState();
