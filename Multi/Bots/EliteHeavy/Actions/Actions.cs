@@ -19,7 +19,7 @@ namespace InfServer.Script.GameType_Multi
 {   // Script Class
     /// Provides the interface between the script and bot
     ///////////////////////////////////////////////////////
-    public partial class Marine : Bot
+    public partial class EliteHeavy : Bot
     {
 
         private List<Action> _actionQueue;
@@ -42,21 +42,8 @@ namespace InfServer.Script.GameType_Multi
                     bool bFleeing = false;
 
                     //Too far?
-                    if (distance > farDist)
+                    if (distance > pursueDist)
                         steering.steerDelegate = steerForPersuePlayer;
-
-                    //Too short?
-                    else if (distance < runDist && _state.health <= 65)
-                    {
-                        bFleeing = true;
-                        steering.steerDelegate = delegate (InfantryVehicle vehicle)
-                        {
-                            if (_target != null)
-                                return vehicle.SteerForFlee(_target._state.position());
-                            else
-                                return Vector3.Zero;
-                        };
-                    }
                     //Quite short?
                     else if (distance < shortDist)
                     {
@@ -72,28 +59,75 @@ namespace InfServer.Script.GameType_Multi
                     //Just right
                     else
                         steering.steerDelegate = null;
-                    
 
-                        
 
-                    //Can we shoot?
-                    if (!bFleeing && _weapon.ableToFire() && distance < fireDist)
+
+
+                    if (!bFleeing)
                     {
+                        //Should we be firing our rifle?
+                        if (distance <= fireDist && distance > sgDist)
+                        {
+                            _weapon.equip(AssetManager.Manager.getItemByID(_type.InventoryItems[0]));
 
-                        int aimResult = _weapon.getAimAngle(_target._state);
+                            if (_weapon.ableToFire())
+                            {
+                                _movement.freezeMovement(800);
+                                int aimResult = _weapon.getAimAngle(_target._state);
 
-                        if (_weapon.isAimed(aimResult))
-                        {   //Spot on! Fire?
-                            _itemUseID = _weapon.ItemID;
-                            _weapon.shotFired();
+                                if (_weapon.isAimed(aimResult))
+                                {   //Spot on! Fire?
+                                    _itemUseID = _weapon.ItemID;
+                                    _weapon.shotFired();
+                                }
+
+                                steering.bSkipAim = true;
+                                steering.angle = aimResult;
+                            }
                         }
+                        //Should we be firing our SG?
+                        else if (distance <= sgDist && distance > meleeDist)
+                        {
+                            _weapon.equip(AssetManager.Manager.getItemByID(_type.InventoryItems[1]));
 
-                        steering.bSkipAim = true;
-                        steering.angle = aimResult;
+                            if (_weapon.ableToFire())
+                            {
+                                int aimResult = _weapon.getAimAngle(_target._state);
+
+                                if (_weapon.isAimed(aimResult))
+                                {   //Spot on! Fire?
+                                    _itemUseID = _weapon.ItemID;
+                                    _weapon.shotFired();
+                                }
+
+                                steering.bSkipAim = true;
+                                steering.angle = aimResult;
+                            }
+
+                        }
+                        //Should we be firing our melee?
+                        else if (distance <= meleeDist)
+                        {
+                            _weapon.equip(AssetManager.Manager.getItemByID(_type.InventoryItems[2]));
+
+                            if (_weapon.ableToFire())
+                            {
+                                int aimResult = _weapon.getAimAngle(_target._state);
+
+                                if (_weapon.isAimed(aimResult))
+                                {   //Spot on! Fire?
+                                    _itemUseID = _weapon.ItemID;
+                                    _weapon.shotFired();
+                                }
+
+                                steering.bSkipAim = true;
+                                steering.angle = aimResult;
+                            }
+
+                        }
+                        else
+                            steering.bSkipAim = false;
                     }
-                    else
-                        steering.bSkipAim = false;
-                        
                 }
                 else
                 {
@@ -132,20 +166,20 @@ namespace InfServer.Script.GameType_Multi
                 targetFlag = enemyflags[_rand.Next(0, 2)];
             else
                 targetFlag = enemyflags[0];
-            
+
 
             Helpers.ObjectState target = new Helpers.ObjectState();
-                target.positionX = targetFlag.posX;
-                target.positionY = targetFlag.posY;
-            
+            target.positionX = targetFlag.posX;
+            target.positionY = targetFlag.posY;
+
 
 
             //What is our distance to the target?
             double distance = (_state.position() - target.position()).Length;
 
 
-                //Does our path need to be updated?
-                if (now - _tickLastPath > c_pathUpdateInterval)
+            //Does our path need to be updated?
+            if (now - _tickLastPath > c_pathUpdateInterval)
             {
                 _arena._pathfinder.queueRequest(
                            (short)(_state.positionX / 16), (short)(_state.positionY / 16),
@@ -290,15 +324,6 @@ namespace InfServer.Script.GameType_Multi
                 fireAtEnemy,
                 retreat
             }
-        }
-    }
-
-    public static class MiscExtensions
-    {
-        // Ex: collection.TakeLast(5);
-        public static IEnumerable<T> TakeLast<T>(this IEnumerable<T> source, int N)
-        {
-            return source.Skip(Math.Max(0, source.Count() - N));
         }
     }
 }

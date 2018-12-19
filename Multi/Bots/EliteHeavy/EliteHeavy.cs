@@ -19,7 +19,7 @@ namespace InfServer.Script.GameType_Multi
 {   // Script Class
     /// Provides the interface between the script and bot
     ///////////////////////////////////////////////////////
-    public partial class Marine : Bot
+    public partial class EliteHeavy : Bot
     {   ///////////////////////////////////////////////////
         // Member Variables
         ///////////////////////////////////////////////////
@@ -42,11 +42,11 @@ namespace InfServer.Script.GameType_Multi
         protected SteeringController steering;	//System for controlling the bot's steering
         private float _seperation;
         private int _tickNextStrafeChange;          //The last time we changed strafe direction
-        private bool _bStrafeLeft;                  //Are we strafing left or right?
+        private bool _bStrafeLeft;					//Are we strafing left or right?
         private int _tickLastRadarDot;
 
 
-        public Marine(VehInfo.Car type, Helpers.ObjectState state, Arena arena)
+        public EliteHeavy(VehInfo.Car type, Helpers.ObjectState state, Arena arena)
             : base(type, state, arena,
             new SteeringController(type, state, arena))
         {
@@ -141,7 +141,7 @@ namespace InfServer.Script.GameType_Multi
         {
             //Does our path need to be updated?
             if (now - _tickLastPath > c_pathUpdateInterval)
-            {   //Update it!
+            {     //Update it!
                 _tickLastPath = int.MaxValue;
 
                 _arena._pathfinder.queueRequest(
@@ -150,9 +150,10 @@ namespace InfServer.Script.GameType_Multi
                     delegate (List<Vector3> path, int pathLength)
                     {
                         if (path != null)
-                        {   
+                        {   //Is the path too long?
+
                                 _path = path;
-                                _pathTarget = 1;
+                            _pathTarget = 1;
                         }
 
                         _tickLastPath = now;

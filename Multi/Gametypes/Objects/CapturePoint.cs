@@ -27,6 +27,8 @@ namespace InfServer.Script.GameType_Multi
         private List<Arena.FlagState> _flags;
         private int tickLastWave;
         private int tickLastPointer;
+        public event Action<Arena.FlagState> Captured;	//Called when the point has been captured
+
 
         private List<Player> players;
 
@@ -47,6 +49,11 @@ namespace InfServer.Script.GameType_Multi
             posY = _flag.posY;
 
             name = Helpers.posToLetterCoord(posX, posY);
+        }
+
+        private void onCapture(Arena.FlagState flag)
+        {
+
         }
 
         public void poll(int now)
@@ -111,11 +118,19 @@ namespace InfServer.Script.GameType_Multi
                 if (now - tickLastWave >= 2500)
                 {
 
-
                     Helpers.Player_RouteExplosion(_arena.Players, 3059, posX, posY, 0, 0, 0);
                     tickLastWave = now;
                     _arena.triggerMessage(0, 500, String.Format("{0} has taken control of the {1} capture point...", attacker._name, name));
                     _flags.FirstOrDefault(f => f == flag).team = attacker;
+
+                    foreach (Player player in playersInArea.Where(p => p._team == flag.team))
+                    {
+                       // _baseScript.StatsCurrent(player).flagCaptures++;
+                    }
+
+                    //Call our capture event, if it exists
+                    if (Captured != null)
+                        Captured(_flag);
                 }
             }
             if (defenders > attackers)

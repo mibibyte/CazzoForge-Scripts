@@ -19,14 +19,14 @@ namespace InfServer.Script.GameType_Multi
 {   // Script Class
     /// Provides the interface between the script and bot
     ///////////////////////////////////////////////////////
-    public partial class Marine : Bot
+    public partial class EliteHeavy : Bot
     {
-        public float farDist = 3.6f;                        //The distance from the player where we actively pursue them
-        public float runDist = 2.6f;                        //The distance from the player where we run away!
-        public float shortDist = 3.0f;                      //The distance from the player where we keep our distance
+        public float pursueDist = 1.0f;
+        public float shortDist = 1.6f;                      //The distance from the player where we keep our distance
+        public float meleeDist = 1.0f;                        //The distance from the player where we cut him down!
+        public float sgDist = 2.2f;                  //The distance from the player where we blast him with SG!
         public float patrolDist = 5.1f;                     //The distance from our patrol points where we turn around and pursue the other point
-        public float retreatDist = 6.1f;                     //The distance from our patrol points where we turn around and pursue the other point
-        public float fireDist = 5.8f;                      //The distance from the player where we keep our distance
+        public float fireDist = 5.8f;                      //The distance from the player where we use our rifle
         private const int c_MaxPath = 350;
         public const int c_DistanceLeeway = 500;
 

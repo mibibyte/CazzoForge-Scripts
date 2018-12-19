@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Text.RegularExpressions;
 
 using InfServer.Logic;
 using InfServer.Game;
@@ -17,6 +18,249 @@ namespace InfServer.Script.GameType_Multi
 {
     class Rewards
     {
+        public class Jackpot
+        {
+            public List<Reward> _playerRewards;
+
+            public int totalMVP;
+            public int totalJackPot;
+
+            public Jackpot()
+            {
+                _playerRewards = new List<Reward>();
+            }
+
+            public class Reward
+            {
+                public Player player;
+                public double MVP = 0;
+                public int Score;
+                public int experience;
+                public int cash;
+                public int points;
+            }
+        }
+
+        static public Jackpot calculateJackpot(IEnumerable<Player> players, Team winner, Settings.GameTypes gameType, Script_Multi script, bool bTicker)
+        {
+            Jackpot result = new Jackpot();
+            int fixedjackpot = 0;
+            Jackpot.Reward rewards;
+            int highest = 0;
+
+            int pointsPerKill = 0;
+            int pointsPerDeath = 0;
+            int pointsPerFlag = 0;
+            double pointsPerSecondWinner = 0;
+            double pointsPerSecondLoser = 0;
+            double pointsPerHP = 0;
+
+            int totalkills = 0;
+            int totalDeaths = 0;
+            int gameLength = 0;
+            if (winner != null)
+            {
+                totalkills = winner._currentGameKills;
+                totalDeaths = winner._currentGameDeaths;
+                gameLength = (winner._arena._tickGameEnded - winner._arena._tickGameStarted) / 1000;
+            }
+            int totalHPHealed = 0;
+            int totalFlagCaps = 0;
+        
+            switch (gameType)
+            {
+                case Settings.GameTypes.Conquest:
+                    fixedjackpot = Settings.c_jackpot_CQ_Fixed;
+                    pointsPerKill = Settings.c_jackpot_CQ_PointsPerKill;
+                    pointsPerDeath = Settings.c_jackpot_CQ_PointsPerDeath;
+                    pointsPerFlag = Settings.c_jackpot_CQ_PointsPerFlag;
+                    pointsPerSecondWinner = Settings.c_jackpot_CQ_WinnerPointsPerSecond;
+                    pointsPerSecondLoser = Settings.c_jackpot_CQ_LoserPointsPerSecond;
+                    pointsPerHP = Settings.c_jackpot_CQ_PointsPerHP;
+                    break;
+
+                case Settings.GameTypes.Coop:
+                    fixedjackpot = Settings.c_jackpot_Co_Fixed;
+                    pointsPerKill = Settings.c_jackpot_Co_PointsPerKill;
+                    pointsPerDeath = Settings.c_jackpot_Co_PointsPerDeath;
+                    pointsPerFlag = Settings.c_jackpot_Co_PointsPerFlag;
+                    pointsPerSecondWinner = Settings.c_jackpot_Co_WinnerPointsPerSecond;
+                    pointsPerSecondLoser = Settings.c_jackpot_Co_LoserPointsPerSecond;
+                    pointsPerHP = Settings.c_jackpot_Co_PointsPerHP;
+                    break;
+            }
+
+            //Set our fixed
+            result.totalJackPot += fixedjackpot;
+
+            //Calculate MVP
+            foreach (Player player in players)
+            {
+                rewards = new Jackpot.Reward();
+                int score = 0;
+                rewards.player = player;
+
+                score += Convert.ToInt32((script.StatsCurrent(player).kills * pointsPerKill));
+                score += Convert.ToInt32((script.StatsCurrent(player).deaths * pointsPerDeath));
+                score += Convert.ToInt32((script.StatsCurrent(player).flagCaptures * pointsPerFlag));
+                score += Convert.ToInt32((script.StatsCurrent(player).potentialHealthHealed * pointsPerHP));
+
+                //Increment Jackpot totals
+                totalHPHealed += script.StatsCurrent(player).potentialHealthHealed;
+                totalFlagCaps += script.StatsCurrent(player).flagCaptures;
+
+                //Calculate win/loss play seconds
+                if (winner != null)
+                {
+                    if (winner._name == "Titan Militia")
+                    {
+                        score += Convert.ToInt32((script.StatsCurrent(player).titanPlaySeconds * pointsPerSecondWinner));
+                        score += Convert.ToInt32((script.StatsCurrent(player).collectivePlaySeconds * pointsPerSecondLoser));
+                    }
+                    else
+                    {
+                        score += Convert.ToInt32((script.StatsCurrent(player).collectivePlaySeconds * pointsPerSecondWinner));
+                        score += Convert.ToInt32((script.StatsCurrent(player).titanPlaySeconds * pointsPerSecondLoser));
+                    }
+                }
+
+                //Tally up his overall score and check if it's our new highest
+                rewards.Score = score;
+                result.totalMVP += score;
+                result._playerRewards.Add(rewards);
+
+                if (score >= highest)
+                    highest = score;
+            }
+
+            //Calculate Total Jackpot
+            result.totalJackPot += (totalkills * pointsPerKill);
+            result.totalJackPot += (totalDeaths * pointsPerDeath);
+            result.totalJackPot += (gameLength * 4);
+            result.totalJackPot += Convert.ToInt32(totalHPHealed * pointsPerHP);
+            result.totalJackPot += (totalFlagCaps * pointsPerFlag);
+
+
+            //Calculate each players reward based on their MVP score and the overall jackpot
+            foreach (Jackpot.Reward reward in result._playerRewards)
+            {
+
+                reward.MVP = (double)reward.Score / (double)highest;
+                if (!bTicker)
+                {
+                    reward.points = Convert.ToInt32(result.totalJackPot * reward.MVP);
+                    reward.cash = Convert.ToInt32(((result.totalJackPot * reward.MVP) * Settings.c_jackpot_CashMultiplier));
+                    reward.experience = Convert.ToInt32((result.totalJackPot * reward.MVP) * Settings.c_jackpot_ExpMultiplier);
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Calculates and rewards a players for a bot kill
+        /// </summary>
+        static public void calculateBotKillRewards(Bots.Bot victim, Player killer)
+        {
+            CfgInfo cfg = killer._server._zoneConfig;
+            int killerCash = 0;
+            int killerExp = 0;
+            int killerPoints = 0;
+            int killerBounty = 0;
+
+            BotSettings settings = victim.Settings();
+            if (settings != null)
+            {
+                killerCash = settings.Cash;
+                killerBounty = settings.Bounty;
+                killerExp = settings.Experience;
+                killerPoints = settings.Points;
+            }
+            else
+            {
+                killerCash = (int)cfg.bot.cashKillReward;
+                killerExp = (int)cfg.bot.expKillReward;
+                killerPoints = (int)cfg.bot.pointsKillReward;
+                killerBounty = (int)cfg.bot.fixedBountyToKiller;
+            }
+
+            //Update his stats
+            addCash(killer, killerCash);
+            killer.Experience += killerExp;
+            killer.KillPoints += killerPoints;
+            killer.Bounty += killerBounty;
+
+
+            //Inform the killer..
+            killer.triggerMessage(1, 500,
+                String.Format("{0} killed by {1} (Cash={2} Exp={3} Points={4})",
+                victim._type.Name, killer._alias,
+                killerCash, killerExp, killerPoints));
+
+            //Sync his state
+            killer.syncState();
+
+            //Check for players in the share radius
+            List<Player> sharedRewards = victim._arena.getPlayersInRange(victim._state.positionX, victim._state.positionY, cfg.bot.shareRadius);
+            Dictionary<int, int> cashRewards = new Dictionary<int, int>();
+            Dictionary<int, int> expRewards = new Dictionary<int, int>();
+            Dictionary<int, int> pointRewards = new Dictionary<int, int>();
+
+            foreach (Player p in sharedRewards)
+            {
+                if (p == killer || p._team != killer._team)
+                    continue;
+
+                cashRewards[p._id] = (int)((((float)killerCash) / 1000) * cfg.bot.sharePercent);
+                expRewards[p._id] = (int)((((float)killerExp) / 1000) * cfg.bot.sharePercent);
+                pointRewards[p._id] = (int)((((float)killerPoints) / 1000) * cfg.bot.sharePercent);
+            }
+
+            //Send reward notices to our lucky witnesses
+            List<int> sentTo = new List<int>();
+            foreach (Player p in sharedRewards)
+            {
+                if (p == killer || p._team != killer._team)
+                    continue;
+
+                //Let em know
+                p.triggerMessage(4, 500,
+                    String.Format("{0} killed by {1} (Cash={2} Exp={3} Points={4})",
+                    victim._type.Name, killer._alias, cashRewards[p._id],
+                    expRewards[p._id], pointRewards[p._id]));
+                addCash(p, cashRewards[p._id]);
+                p.Experience += expRewards[p._id];
+                p.AssistPoints += pointRewards[p._id];
+
+                //Sync their state
+                p.syncState();
+
+                sentTo.Add(p._id);
+            }
+
+            //Route the kill to the rest of the arena
+            foreach (Player p in victim._arena.Players)
+            {	//As long as we haven't already declared it, send
+                if (p == null)
+                    continue;
+
+                if (p == killer)
+                    continue;
+
+                if (sentTo.Contains(p._id))
+                    continue;
+
+                //Adjust our color accordingly..
+                byte color = 0;
+                if (victim._team == p._team)
+                    color = 4;
+
+                //Let them know
+                p.triggerMessage(color, 500,
+                    String.Format("{0} killed by {1}",
+                    victim._type.Name, killer._alias));
+            }
+        }
+
         static public void calculatePlayerKillRewards(Player victim, Player killer)
         {
             CfgInfo cfg = victim._server._zoneConfig;
@@ -59,7 +303,7 @@ namespace InfServer.Script.GameType_Multi
             Helpers.Player_RouteKill(killer, update, victim, killerCash, killerPoints, killerPoints, killerExp);
 
             //Update some statistics
-            killer.Cash += killerCash;
+            addCash(killer, killerCash);
             killer.Experience += killerExp;
             killer.KillPoints += killerPoints;
             victim.DeathPoints += killerPoints;
@@ -125,7 +369,7 @@ namespace InfServer.Script.GameType_Multi
                     continue;
 
                 Helpers.Player_RouteKill(p, update, victim, cashRewards[p._id], killerPoints, pointRewards[p._id], expRewards[p._id]);
-                p.Cash += cashRewards[p._id];
+                addCash(p, cashRewards[p._id]);
                 p.Experience += expRewards[p._id];
                 p.AssistPoints += pointRewards[p._id];
 
@@ -140,7 +384,7 @@ namespace InfServer.Script.GameType_Multi
                 if (!sentTo.Contains(p._id))
                 {
                     Helpers.Player_RouteKill(p, update, victim, cashRewards[p._id], killerPoints, pointRewards[p._id], expRewards[p._id]);
-                    p.Cash += cashRewards[p._id];
+                    addCash(p, cashRewards[p._id]);
                     p.Experience += expRewards[p._id];
                     p.AssistPoints += pointRewards[p._id];
 
@@ -158,7 +402,7 @@ namespace InfServer.Script.GameType_Multi
                     p.Bounty += BtyShare;
 
                     Helpers.Player_RouteKill(p, update, victim, cashRewards[p._id], killerPoints, pointRewards[p._id], expRewards[p._id]);
-                    p.Cash += cashRewards[p._id];
+                    addCash(p, cashRewards[p._id]);
                     p.Experience += expRewards[p._id];
                     p.AssistPoints += pointRewards[p._id];
 
@@ -222,6 +466,21 @@ namespace InfServer.Script.GameType_Multi
 
                 Helpers.Player_RouteKill(p, update, victim, 0, killerPoints, 0, 0);
             }
+        }
+
+        static public void addCash(Player player, int quantity)
+        {
+            //Any rare cash item?
+            double multiplier = 1.0;
+            int additional = 0;
+            if (player.getInventoryAmount(2019) > 0)
+            { 
+                multiplier = 0.10;
+                additional = Convert.ToInt32(quantity * multiplier);
+            }
+
+            player.Cash += (quantity + additional);
+            player.syncState();
         }
     }
 }

@@ -23,28 +23,46 @@ namespace InfServer.Script.GameType_Multi
         private Arena _arena;                   //Pointer to our arena class
         private CfgInfo _config;				//The zone config
         private Settings.GameTypes _gameType;
+        public Loot _loot;
+        public Crafting _crafting;
+        private List<string> _earlyAccessList;
+        private bool _isEarlyAccess;
+        public bool bJackpot;
+
+        //Addon Classes
+        Upgrade _upgrader;
 
 
         //Poll variables
         private int _lastGameCheck;         //Tick at which we checked for game availability
         private int _tickGameStarting;      //Tick at which the game began starting (0 == not initiated)
         private int _tickGameStarted;       //Tick at which the game actually started (0 == stopped)
-      
+        private int _tickLastMinorPoll;
+        private int _lastKillStreakUpdate;
 
         //Misc variables
         private int _tickStartDelay;
         private int _minPlayers;            //Do we have the # of min players to start a game?
         private bool _bMiniMapsEnabled;
+        public Team _winner;
+        private Player lastKiller;
 
+        public List<SupplyDrop> _supplyDrops;
         private List<Player> _fakePlayers;
 
+        //Stats
+        /// <summary>
+        /// Current game player stats
+        /// </summary>
+        public Dictionary<string, Stats> _savedPlayerStats;
 
         /// <summary>
         /// Our gametype handlers
         /// </summary>
         private Conquest _cq;
-        private Coop _coop;
+        public Coop _coop;
 
+        #region Member Fucntions
         ///////////////////////////////////////////////////
         // Member Functions
         ///////////////////////////////////////////////////
@@ -55,14 +73,23 @@ namespace InfServer.Script.GameType_Multi
         {   //Populate our variables
             _arena = invoker as Arena;
             _config = _arena._server._zoneConfig;
+            _upgrader = new Upgrade();
+            bJackpot = true;
 
             //Load up our gametype handlers
             _cq = new Conquest(_arena, this);
             _coop = new Coop(_arena, this);
 
+            //Load any modules
+            _loot = new Loot(_arena);
+            _crafting = new Crafting();
+            _loot.Load(_arena._server);
+
             //Default to Conquest
             _gameType = Settings.GameTypes.Conquest;
             _minPlayers = 1;
+
+            _isEarlyAccess = false;
 
             if (_arena._name == "[Public] Co-Op")
                 _gameType = Settings.GameTypes.Coop;
@@ -74,9 +101,10 @@ namespace InfServer.Script.GameType_Multi
             }
 
             _fakePlayers = new List<Player>();
-
+            _savedPlayerStats = new Dictionary<string, Stats>();
             _lastSpawn = new Dictionary<string, Helpers.ObjectState>();
             _bMiniMapsEnabled = true;
+            _supplyDrops = new List<SupplyDrop>();
             return true;
         }
 
@@ -90,13 +118,16 @@ namespace InfServer.Script.GameType_Multi
             if (now - _lastGameCheck <= Arena.gameCheckInterval)
                 return true;
             _lastGameCheck = now;
+            bool bMinor = (now - _tickLastMinorPoll) >= 1000;
 
             //Do we have enough players?
             int playing = _arena.PlayerCount;
             if (_arena._bGameRunning && playing < _minPlayers && _arena._bIsPublic)
             {
+                bJackpot = false;
                 //Stop the game and reset voting
                 _arena.gameEnd();
+
             }
 
 
@@ -125,6 +156,29 @@ namespace InfServer.Script.GameType_Multi
                     });
             }
 
+            //Update each player's playseconds
+            if (_arena._bGameRunning && now - _tickLastMinorPoll >= 1000)
+            {
+                _tickLastMinorPoll = now;
+                foreach (Player player in _arena.PlayersIngame)
+                {
+                    if (player._team._name == "Titan Militia")
+                        StatsCurrent(player).titanPlaySeconds = StatsCurrent(player).titanPlaySeconds + 1;
+                    if (player._team._name == "Collective Military")
+                        StatsCurrent(player).collectivePlaySeconds = StatsCurrent(player).collectivePlaySeconds + 1;
+                }
+            }
+
+            if (now - _lastKillStreakUpdate >= 500)
+            {
+                UpdateKillStreaks();
+                _lastKillStreakUpdate = now;
+            }
+
+            //Pool our supply drops
+            foreach (SupplyDrop drop in _supplyDrops)
+                drop.poll(now);
+
             //Poll our current gametype!
             switch (_gameType)
             {
@@ -142,6 +196,7 @@ namespace InfServer.Script.GameType_Multi
 
             return true;
         }
+        #endregion
 
         #region Events
 
@@ -150,12 +205,17 @@ namespace InfServer.Script.GameType_Multi
         {
             if (portal.GeneralData.Name.Contains("DS Portal"))
             {
-                Helpers.ObjectState flagPoint = findFlagWarp(player);
+                Helpers.ObjectState flagPoint;
                 Helpers.ObjectState warpPoint;
+
+                if (_gameType == Settings.GameTypes.Coop)
+                    flagPoint = findFlagWarp(player, true);
+                else
+                    flagPoint = findFlagWarp(player, false);
 
                 if (flagPoint == null)
                 {
-                    Log.write(TLog.Normal, String.Format("Could not find suitable player warp for {0}", player._alias));
+                    Log.write(TLog.Normal, String.Format("Could not find suitable flag warp for {0}", player._alias));
 
                     if (!_lastSpawn.ContainsKey(player._alias))
                     {
@@ -220,7 +280,15 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.Explosion")]
         public bool playerExplosion(Player player, ItemInfo.Projectile weapon, short posX, short posY, short posZ)
         {
-
+            switch (weapon.id)
+            {
+                //Supply Drop?
+                case 1319:
+                    {
+                        spawnSupplyDrop(player._team, posX, posY);
+                    }
+                    break;
+            }
 
             //Defer to our current gametype handler!
             switch (_gameType)
@@ -246,6 +314,13 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.JoinGame")]
         public bool playerJoinGame(Player player)
         {
+            if (StatsCurrent(player) == null)
+                createPlayerStats(player);
+
+
+            //Mark him as playing
+            StatsCurrent(player).hasPlayed = true;
+
             bool handler = true;
             //Defer to our current gametype handler!
             switch (_gameType)
@@ -270,7 +345,11 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.Enter")]
         public void playerEnter(Player player)
         {
+            if (StatsCurrent(player) == null)
+                createPlayerStats(player);
 
+            //Mark him as playing
+            StatsCurrent(player).hasPlayed = true;
         }
 
         /// <summary>
@@ -304,6 +383,45 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.EnterArena")]
         public void playerEnterArena(Player player)
         {
+            //Fix this later
+            if (_arena.TotalPlayerCount == 1 && player._permissionStatic < Data.PlayerPermission.Mod && _arena._bIsPublic)
+                player._permissionTemp = Data.PlayerPermission.Normal;
+
+            //Read our list
+            _earlyAccessList = ListReader.readListFromFile("earlyaccess.txt");
+
+            if (_isEarlyAccess)
+            {
+                if (!_earlyAccessList.Contains(player._alias))
+                {
+                    _earlyAccessList.Add(player._alias);
+                    ListReader.saveListToFile(_earlyAccessList, "earlyaccess.txt");
+
+                    player.sendMessage(4,
+                        "#You have been added to our early access list for testing the zone while it's under development. " +
+                        "Once the zone is wiped and goes live, You will be given an early access bonus when you login for the first time. Thanks!");
+                }
+            }
+            else
+            {
+                if (_earlyAccessList.Contains(player._alias))
+                {
+                    _earlyAccessList.Remove(player._alias);
+                    ListReader.saveListToFile(_earlyAccessList, "earlyaccess.txt");
+
+                    //Lucky fella
+                    player.Cash += 50000;
+                    player.syncState();
+                    //Let him know!
+                    player.sendMessage(4,
+                        String.Format("#Thanks for testing! Here is your early access bonus: (Cash=50000)"));
+                }
+            }
+
+
+            if (StatsCurrent(player) == null)
+                createPlayerStats(player);
+
             //Defer to our current gametype handler!
             switch (_gameType)
             {
@@ -374,11 +492,22 @@ namespace InfServer.Script.GameType_Multi
         {
             _tickGameStarting = 0;
             _tickGameStarted = Environment.TickCount;
+            ResetKiller(null);
+
+            if (_arena._bIsPublic)
+                bJackpot = true;
 
             if (_arena.ActiveTeams.Count() == 0)
                 return false;
 
+            _supplyDrops.Clear();
+
             _arena.initialHideSpawns();
+
+            _savedPlayerStats = new Dictionary<string, Stats>();
+
+            foreach (Player player in _arena.Players)
+                createPlayerStats(player);
 
             //Defer to our current gametype handler!
             switch (_gameType)
@@ -421,6 +550,59 @@ namespace InfServer.Script.GameType_Multi
                     //Do nothing
                     break;
             }
+
+            //Are we counting this game for rewards?
+            if (!bJackpot)
+                return true;
+
+            //Calculate our jacpot
+            Rewards.Jackpot jackpot = Rewards.calculateJackpot(_arena.Players, _winner, _gameType, this, false);
+            _arena.sendArenaMessage(String.Format("&Jackpot: {0}", jackpot.totalJackPot));
+
+            List<Rewards.Jackpot.Reward> rankers = new List<Rewards.Jackpot.Reward>();
+
+            foreach (Rewards.Jackpot.Reward reward in jackpot._playerRewards.OrderByDescending(r => r.MVP))
+            {
+                if (reward.Score == 0)
+                    continue;
+
+                rankers.Add(reward);
+            }
+
+            int idx = 3;
+            foreach (Rewards.Jackpot.Reward reward in rankers)
+            {
+                if (reward.player == null) continue;
+
+                if (idx-- <= 0)
+                    break;
+
+                string placeWord = "&3rd";
+                string format = " (MVP Percentage={0}%): {1}";
+                switch (idx)
+                {
+                    case 2:
+                        placeWord = "&1st";
+                        break;
+                    case 1:
+                        placeWord = "&2nd";
+                        break;
+                }
+
+                _arena.sendArenaMessage(string.Format(placeWord + format, Math.Round(reward.MVP * 100, 2), reward.player._alias));
+            }
+
+            idx = 1;
+            foreach (Rewards.Jackpot.Reward reward in rankers)
+            {
+                if (reward.player == null) continue;
+                reward.player.sendMessage(0, String.Format("Your personal Jackpot: (MVP={0}% Rank={1} Score={2}) Rewards: (Cash={3} Experience={4} Points={5})",
+                Math.Round(reward.MVP * 100, 2), idx, reward.Score, reward.cash, reward.experience, reward.points));
+                Rewards.addCash(reward.player, reward.cash);
+                reward.player.Experience += reward.experience;
+                reward.player.BonusPoints += reward.points;
+                idx++;
+            }
             return true;
         }
 
@@ -456,6 +638,32 @@ namespace InfServer.Script.GameType_Multi
                     break;
             }
             return true;
+        }
+
+        /// <summary>
+        /// Triggered when a player requests to pick up an item
+        /// </summary>
+        [Scripts.Event("Player.ItemPickup")]
+        public bool playerItemPickup(Player player, Arena.ItemDrop drop, ushort quantity)
+        {
+            if (quantity == drop.quantity)
+            {   //Delete the drop
+                drop.quantity = 0;
+                _arena._items.Remove(drop.id);
+            }
+            else
+                drop.quantity = (short)(drop.quantity - quantity);
+
+            //Add the pickup to inventory!
+            player.inventoryModify(drop.item, quantity);
+
+            //Update his bounty.
+            if (drop.owner != player) //Bug abuse fix for people dropping and picking up items to get bounty
+                player.Bounty += drop.item.prizeBountyPoints;
+
+            //Remove the item from player's clients
+            Helpers.Object_ItemDropUpdate(_arena.Players, drop.id, (ushort)drop.quantity);
+            return false;
         }
 
         /// <summary>
@@ -498,6 +706,134 @@ namespace InfServer.Script.GameType_Multi
                     //Do nothing
                     break;
             }
+
+            from.sendMessage(0, "#Individual Statistics Breakdown");
+            int idx = 3;        //Only display the top 3 players
+            List<Player> rankers = new List<Player>();
+            foreach (Player p in _arena.Players.ToList())
+            {
+                if (p == null)
+                    continue;
+                if (StatsCurrent(p) != null && StatsCurrent(p).hasPlayed)
+                    rankers.Add(p);
+            }
+
+            if (rankers.Count > 0)
+            {
+                var rankedPlayerGroups = rankers.Select(player => new
+                {
+                    Alias = player._alias,
+                    Kills = StatsCurrent(player).kills,
+                    Deaths = StatsCurrent(player).deaths
+                })
+                .GroupBy(pl => pl.Kills)
+                .OrderByDescending(k => k.Key)
+                .Take(idx)
+                .Select(g => g.OrderBy(plyr => plyr.Deaths));
+
+                foreach (var group in rankedPlayerGroups)
+                {
+                    if (idx <= 0)
+                        break;
+
+                    string placeWord = "";
+                    string format = " (K={0} D={1}): {2}";
+                    switch (idx)
+                    {
+                        case 3:
+                            placeWord = "!1st";
+                            break;
+                        case 2:
+                            placeWord = "!2nd";
+                            break;
+                        case 1:
+                            placeWord = "!3rd";
+                            break;
+                    }
+
+                    idx -= group.Count();
+                    if (group.First() != null)
+                        from.sendMessage(0, string.Format(placeWord + format, group.First().Kills,
+                            group.First().Deaths, string.Join(", ", group.Select(g => g.Alias))));
+                }
+
+                IEnumerable<Player> specialPlayers = rankers.OrderByDescending(player => StatsCurrent(player).deaths);
+                int topDeaths = (specialPlayers.First() != null ? StatsCurrent(specialPlayers.First()).deaths : 0), deaths = 0;
+                if (topDeaths > 0)
+                {
+                    from.sendMessage(0, "Most Deaths");
+                    int i = 0;
+                    List<string> mostDeaths = new List<string>();
+                    foreach (Player p in specialPlayers)
+                    {
+                        if (p == null)
+                            continue;
+
+                        if (p.getStats() != null)
+                        {
+                            deaths = p.getStats().deaths;
+                            if (deaths == topDeaths)
+                            {
+                                if (i++ >= 1)
+                                    mostDeaths.Add(p._alias);
+                                else
+                                    mostDeaths.Add(string.Format("(D={0}): {1}", deaths, p._alias));
+                            }
+                        }
+                    }
+                    if (mostDeaths.Count > 0)
+                    {
+                        string s = string.Join(", ", mostDeaths.ToArray());
+                        from.sendMessage(0, s);
+                    }
+                }
+
+                IEnumerable<Player> Healed = rankers.Where(player => StatsCurrent(player).potentialHealthHealed > 0);
+                if (Healed.Count() > 0)
+                {
+                    IEnumerable<Player> mostHealed = Healed.OrderByDescending(player => StatsCurrent(player).potentialHealthHealed);
+                    idx = 3;
+                    from.sendMessage(0, "&Most HP Healed");
+                    foreach (Player p in mostHealed)
+                    {
+                        if (p == null) continue;
+                        if (StatsCurrent(p) != null)
+                        {
+                            if (idx-- <= 0)
+                                break;
+
+                            string placeWord = "&3rd";
+                            string format = " (HP Total={0}): {1}";
+                            switch (idx)
+                            {
+                                case 2:
+                                    placeWord = "&1st";
+                                    break;
+                                case 1:
+                                    placeWord = "&2nd";
+                                    break;
+                            }
+                            from.sendMessage(0, string.Format(placeWord + format, StatsCurrent(p).potentialHealthHealed, p._alias));
+                        }
+                    }
+                }
+            }
+
+            //Are they on the list?
+            if (StatsCurrent(from) != null)
+            {
+                string personalFormat = "!Personal Score: (K={0} D={1})";
+                from.sendMessage(0, string.Format(personalFormat,
+                    StatsCurrent(from).kills,
+                    StatsCurrent(from).deaths));
+            }
+            //If not, give them the generic one
+            else
+            {
+                string personalFormat = "!Personal Score: (K=0 D=0)";
+                from.sendMessage(0, personalFormat);
+            }
+
             return true;
         }
 
@@ -507,6 +843,31 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.Produce")]
         public bool playerProduce(Player player, Computer computer, VehInfo.Computer.ComputerProduct product)
         {
+            if (computer._type.Name == "Supply Drop")
+            {
+                if (product.Title == "Open Supplies")
+                {
+                    SupplyDrop drop = _supplyDrops.First(s => s._computer == computer);
+
+                    if (drop == null)
+                        return true;
+
+                    drop.open(player);
+                }
+            }
+
+            if (computer._type.Name == "Blacksmith")
+            {
+                string itemName;
+
+                if (product.Title.StartsWith("Build"))
+                {
+                    itemName = product.Title.Substring(5, product.Title.Length - 5).Trim();
+
+                    return _crafting.playerCraftItem(player, itemName);
+                }
+               
+            }
             return true;
         }
 
@@ -553,6 +914,20 @@ namespace InfServer.Script.GameType_Multi
             killer.Kills++;
             victim.Deaths++;
 
+            //Update our kill streak
+            UpdateKiller(killer);
+            UpdateDeath(victim, killer);
+
+
+            StatsCurrent(killer).kills++;
+            StatsCurrent(victim).deaths++;
+
+            long wepTick = StatsCurrent(killer).lastUsedWepTick;
+            if (wepTick != -1)
+                UpdateWeaponKill(killer);
+
+            if (killer != null && victim != null && victim._bounty >= 1200)
+                _arena.sendArenaMessage(string.Format("{0} has ended {1}'s bounty.", killer._alias, victim._alias), 8);
 
             //Now defer to our current gametype handler!
             switch (_gameType)
@@ -577,6 +952,11 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.BotKill")]
         public bool playerBotKill(Player victim, Bot bot)
         {
+            UpdateDeath(victim, null);
+            StatsCurrent(victim).deaths++;
+            //Update our base zone stats
+            victim.Deaths++;
+
             //Now defer to our current gametype handler!
             switch (_gameType)
             {
@@ -602,24 +982,81 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Bot.Death")]
         public bool botDeath(Bot dead, Player killer, int weaponID)
         {
-            killer.Kills++;
 
-
-            //Now defer to our current gametype handler!
-            switch (_gameType)
+            if (killer != null)
             {
-                case Settings.GameTypes.Conquest:
-                    _cq.botDeath(dead, killer);
-                    break;
-                case Settings.GameTypes.Coop:
-                    _coop.botDeath(dead, killer);
-                    break;
+                Helpers.Vehicle_RouteDeath(_arena.Players, killer, dead, null);
+                if (killer != null && dead._team != killer._team)
+                {//Don't allow rewards for team kills
+                    Rewards.calculateBotKillRewards(dead, killer);
+                }
 
-                default:
-                    //Do nothing
-                    break;
+                killer.Kills++;
+                UpdateKiller(killer);
+
+                StatsCurrent(killer).kills++;
+                long wepTick = StatsCurrent(killer).lastUsedWepTick;
+                if (wepTick != -1)
+                    UpdateWeaponKill(killer);
+
+                //Now defer to our current gametype handler!
+                switch (_gameType)
+                {
+                    case Settings.GameTypes.Conquest:
+                        _cq.botDeath(dead, killer);
+                        break;
+                    case Settings.GameTypes.Coop:
+                        _coop.botDeath(dead, killer);
+                        break;
+
+                    default:
+                        //Do nothing
+                        break;
+                }
             }
+            else
+                Helpers.Vehicle_RouteDeath(_arena.Players, null, dead, null);
 
+            //Check for players in the share radius
+            List<Player> playersInRadius = _arena.getPlayersInRange(dead._state.positionX, dead._state.positionY, 600, false);
+
+            //Killer is always added...
+            if (!playersInRadius.Contains(killer))
+                playersInRadius.Add(killer);
+
+            //Try some lootin
+            _loot.tryLootDrop(playersInRadius, dead, dead._state.positionX, dead._state.positionY);
+
+            return false;
+        }
+
+        /// <summary>
+        /// Triggered when a player is buying an item from the shop
+        /// </summary>
+        [Scripts.Event("Shop.Buy")]
+        public bool shopBuy(Player patron, ItemInfo item, int quantity)
+        {
+            if (item.name.StartsWith("Upgrade"))
+            {
+                string upgradeItem = item.name.Split(':')[1].TrimStart();
+
+                if (patron._inventory.Values.Count(itm => itm.item.name.Contains(upgradeItem)) == 0)
+                {
+                    patron.sendMessage(-1, "You're not allowed to upgrade items you don't own");
+                    return false;
+                }
+
+                ItemInfo currentItem = patron._inventory.Values.First(itm => itm.item.name.Contains(upgradeItem)).item;
+                ItemInfo newItem = _upgrader.tryItemUpgrade(patron, currentItem.name);
+
+                //Success?
+                if (newItem != null)
+                {
+                    patron.inventoryModify(currentItem, -1);
+                    patron.inventoryModify(newItem, 1);
+                }
+                return true;
+            }
             return true;
         }
 
@@ -653,7 +1090,21 @@ namespace InfServer.Script.GameType_Multi
         /// </summary>
         [Scripts.Event("Player.Repair")]
         public bool playerPlayerRepair(Player player, ItemInfo.RepairItem item, UInt16 target, short posX, short posY)
-        { 
+        {
+            //Healing points
+            if (item.repairType == 0 && item.repairDistance < 0)
+            {   //Get all players near
+                List<Player> players = _arena.getPlayersInRange(player._state.positionX, player._state.positionY, -item.repairDistance);
+                int totalHealth = 0;
+                foreach (Player p in players)
+                {
+                    if (p == null || p == player || p._state.health >= 100 || p._state.health <= 0)
+                        continue;
+                    totalHealth += (p._baseVehicle._type.Hitpoints - p._state.health);
+                }
+                StatsCurrent(player).potentialHealthHealed += totalHealth;
+            }
+
             //Defer to our current gametype handler!
             switch (_gameType)
             {
@@ -699,6 +1150,13 @@ namespace InfServer.Script.GameType_Multi
                 player.triggerMessage((byte)id, 500, "Trigger message test");
 
             }
+
+            if (command.Equals("state"))
+            {
+
+                player.sendMessage(0, String.Format("positionX={0} positionY={1} positionZ={2}",player._state.positionX, player._state.positionY, player._state.positionZ));
+
+            }
             return true;
         }
 
@@ -708,7 +1166,28 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.ModCommand")]
         public bool playerModcommand(Player player, Player recipient, string command, string payload)
         {
-            if (command.Equals("pop"))
+
+            if (command.Equals("addbot"))
+            {
+                if (String.IsNullOrEmpty(payload))
+                {;
+                    return false;
+                }
+
+                if (payload.Equals("elitemarine"))
+                {
+                    _coop.spawnEliteMarine(player, _coop._botTeam);
+                    return false;
+                }
+                if (payload.Equals("eliteheavy"))
+                {
+                    _coop.spawnEliteHeavy(player, _coop._botTeam);
+                    return false;
+                }
+            }
+
+
+                if (command.Equals("pop"))
             {
 
                 int id;
@@ -1096,8 +1575,162 @@ namespace InfServer.Script.GameType_Multi
 
         #endregion
 
+        #region Killstreaks
+        /// <summary>
+        /// Updates our players kill streak timer
+        /// </summary>
+        private void UpdateKillStreaks()
+        {
+            foreach (Player p in _arena.PlayersIngame)
+            {
+                if (StatsCurrent(p) == null)
+                    continue;
 
-        #region Custom Calls
+                if (StatsCurrent(p).lastUsedWepTick == -1)
+                    continue;
+
+                if (Environment.TickCount - StatsCurrent(p).lastUsedWepTick <= 0)
+                    ResetWeaponTicker(p);
+            }
+        }
+
+        /// <summary>
+        /// Resets the last killer object
+        /// </summary>
+        public void ResetKiller(Player killer)
+        {
+            lastKiller = killer;
+        }
+
+        /// <summary>
+        /// Resets the weapon ticker to default (Time Expired)
+        /// </summary>
+        public void ResetWeaponTicker(Player target)
+        {
+            if (StatsCurrent(target) == null)
+                return;
+
+            StatsCurrent(target).lastUsedWep = null;
+            StatsCurrent(target).lastUsedWepKillCount = 0;
+            StatsCurrent(target).lastUsedWepTick = -1;
+        }
+
+        /// <summary>
+        /// Updates the killer and their counter
+        /// </summary>
+        public void UpdateKiller(Player killer)
+        {
+            if (StatsCurrent(killer) == null)
+                return;
+
+            StatsCurrent(killer).lastKillerCount++;
+
+            //Should we be giving any rewards etc?
+            switch (_gameType)
+            {
+                case Settings.GameTypes.Conquest:
+                    _cq.playerKillStreak(killer, StatsCurrent(killer).lastKillerCount);
+                    break;
+                case Settings.GameTypes.Coop:
+                    {
+                    _coop.playerKillStreak(killer, StatsCurrent(killer).lastKillerCount);
+                    }
+                    break;
+
+            }
+           
+            //Is this first blood?
+            if (lastKiller == null)
+            {
+                //It is, lets make the sound
+                _arena.sendArenaMessage(string.Format("{0} has drawn first blood.", killer._alias), 9);
+            }
+            lastKiller = killer;
+        }
+
+        /// <summary>
+        /// Updates the victim's kill streaks
+        /// </summary>
+        public void UpdateDeath(Player victim, Player killer)
+        {
+            if (StatsCurrent(victim) == null)
+                return;
+
+
+            if (StatsCurrent(victim).lastKillerCount >= 6)
+            {
+                _arena.sendArenaMessage(string.Format("{0}", killer != null ? killer._alias + " has ended " + victim._alias + "'s kill streak." :
+                    victim._alias + "'s kill streak has ended."), 7);
+            }
+            StatsCurrent(victim).lastKillerCount = 0;
+
+        }
+
+        /// <summary>
+        /// Updates the last fired weapon and the ticker
+        /// </summary>
+        public void UpdateWeapon(Player from, ItemInfo.Projectile usedWep)
+        {
+            if (StatsCurrent(from) == null)
+                return;
+
+            StatsCurrent(from).lastUsedWep = usedWep;
+            //500 = Alive time for the schrapnel after main weap explosion
+            StatsCurrent(from).lastUsedWepTick = DateTime.Now.AddTicks(500).Ticks;
+        }
+
+        /// <summary>
+        /// Updates the last weapon kill counter
+        /// </summary>
+        public void UpdateWeaponKill(Player from)
+        {
+            if (StatsCurrent(from) == null)
+                return;
+
+            StatsCurrent(from).lastUsedWepKillCount++;
+            ItemInfo.Projectile lastUsedWep = StatsCurrent(from).lastUsedWep;
+            if (lastUsedWep == null)
+                return;
+
+            if (lastUsedWep.name.Contains("Combat Knife"))
+                _arena.sendArenaMessage(string.Format("{0} is throwing out the knives.", from._alias), 6);
+
+            switch (StatsCurrent(from).lastUsedWepKillCount)
+            {
+                case 2:
+                    _arena.sendArenaMessage(string.Format("{0} just got a double {1} kill.", from._alias, lastUsedWep.name), 13);
+                    break;
+                case 3:
+                    _arena.sendArenaMessage(string.Format("{0} just got a triple {1} kill.", from._alias, lastUsedWep.name), 14);
+                    break;
+                case 4:
+                    _arena.sendArenaMessage(string.Format("A 4 {0} kill by {0}?!?", lastUsedWep.name, from._alias), 15);
+                    break;
+                case 5:
+                    _arena.sendArenaMessage(string.Format("Unbelievable! {0} with the 5 {1} kill?", from._alias, lastUsedWep.name), 16);
+                    break;
+            }
+        }
+    
+    #endregion
+
+    #region Custom Calls
+
+    public void spawnSupplyDrop(Team team, short posX, short posY)
+        {
+            VehInfo supplyVehicle = AssetManager.Manager.getVehicleByID(405);
+            Helpers.ObjectState objState = new Helpers.ObjectState();
+
+            objState.positionX = posX;
+            objState.positionY = posY;
+
+            Computer newVehicle = _arena.newVehicle(supplyVehicle, team, null, objState) as Computer;
+            SupplyDrop newDrop = new SupplyDrop(team, newVehicle, posX, posY);
+            _supplyDrops.Add(newDrop);
+
+            team.sendArenaMessage(String.Format("&Supplies have been dropped at {0}.", newVehicle._state.letterCoord()), 4);
+        }
+
         private Player findSquadWarp(IEnumerable<Player> squadmates, Player player)
         {
             Player warpTo = null;
@@ -1177,5 +1810,43 @@ namespace InfServer.Script.GameType_Multi
             return true;
         }
         #endregion
+
+        #region Player Stats
+        public void createPlayerStats(Player player)
+        {
+            //Create some new stuff
+            Stats temp = new Stats();
+            temp.teamname = player._team._name;
+            temp.alias = player._alias;
+            temp.points = 0;
+            temp.assistPoints = 0;
+            temp.bonusPoints = 0;
+            temp.killPoints = 0;
+            temp.titanPlaySeconds = 0;
+            temp.collectivePlaySeconds = 0;
+            temp.kills = 0;
+            temp.deaths = 0;
+            temp.player = player;
+
+            temp.lastKillerCount = 0;
+            temp.lastUsedWep = null;
+            temp.lastUsedWepKillCount = 0;
+            temp.lastUsedWepTick = -1;
+            temp.potentialHealthHealed = 0;
+            temp.onPlayingField = false;
+            temp.hasPlayed = player.IsSpectator ? false : true;
+
+            if (!_savedPlayerStats.ContainsKey(player._alias))
+                _savedPlayerStats.Add(player._alias, temp);
+        }
+
+        public Stats StatsCurrent(Player player)
+        {
+            if (_savedPlayerStats.ContainsKey(player._alias))
+                return _savedPlayerStats[player._alias];
+            else
+                return null;
+        }
     }
+    #endregion
 }

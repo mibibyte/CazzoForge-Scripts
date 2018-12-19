@@ -19,7 +19,7 @@ namespace InfServer.Script.GameType_Multi
 {   // Script Class
     /// Provides the interface between the script and bot
     ///////////////////////////////////////////////////////
-    public partial class Marine : Bot
+    public partial class EliteHeavy : Bot
     {
         #region Steer Delegates
         /// <summary>
@@ -65,7 +65,7 @@ namespace InfServer.Script.GameType_Multi
             Vector3 seperationSteer = vehicle.SteerForSeparation(_seperation, -0.707f, marinebots);
             Vector3 pursuitSteer = vehicle.SteerForPursuit(_target._baseVehicle.Abstract, 0.2f);
 
-            return (seperationSteer * 2.3f) + pursuitSteer;
+            return (seperationSteer * 1.3f) + pursuitSteer;
         }
 
         /// <summary>

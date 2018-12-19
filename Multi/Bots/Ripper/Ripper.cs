@@ -19,7 +19,7 @@ namespace InfServer.Script.GameType_Multi
 {   // Script Class
     /// Provides the interface between the script and bot
     ///////////////////////////////////////////////////////
-    public partial class Marine : Bot
+    public partial class Ripper : Bot
     {   ///////////////////////////////////////////////////
         // Member Variables
         ///////////////////////////////////////////////////
@@ -42,11 +42,11 @@ namespace InfServer.Script.GameType_Multi
         protected SteeringController steering;	//System for controlling the bot's steering
         private float _seperation;
         private int _tickNextStrafeChange;          //The last time we changed strafe direction
-        private bool _bStrafeLeft;                  //Are we strafing left or right?
+        private bool _bStrafeLeft;					//Are we strafing left or right?
         private int _tickLastRadarDot;
 
 
-        public Marine(VehInfo.Car type, Helpers.ObjectState state, Arena arena)
+        public Ripper(VehInfo.Car type, Helpers.ObjectState state, Arena arena)
             : base(type, state, arena,
             new SteeringController(type, state, arena))
         {

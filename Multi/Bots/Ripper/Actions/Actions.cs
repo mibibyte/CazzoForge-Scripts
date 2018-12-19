@@ -19,7 +19,7 @@ namespace InfServer.Script.GameType_Multi
 {   // Script Class
     /// Provides the interface between the script and bot
     ///////////////////////////////////////////////////////
-    public partial class Marine : Bot
+    public partial class Ripper : Bot
     {
 
         private List<Action> _actionQueue;
@@ -83,7 +83,9 @@ namespace InfServer.Script.GameType_Multi
                         int aimResult = _weapon.getAimAngle(_target._state);
 
                         if (_weapon.isAimed(aimResult))
-                        {   //Spot on! Fire?
+                        {
+                            _movement.freezeMovement(2000);
+                            //Spot on! Fire?
                             _itemUseID = _weapon.ItemID;
                             _weapon.shotFired();
                         }
@@ -290,15 +292,6 @@ namespace InfServer.Script.GameType_Multi
                 fireAtEnemy,
                 retreat
             }
-        }
-    }
-
-    public static class MiscExtensions
-    {
-        // Ex: collection.TakeLast(5);
-        public static IEnumerable<T> TakeLast<T>(this IEnumerable<T> source, int N)
-        {
-            return source.Skip(Math.Max(0, source.Count() - N));
         }
     }
 }

@@ -81,8 +81,6 @@ namespace InfServer.Script.GameType_Multi
 
             foreach (Bot bot in _bots)
             {
-
-
                 switch (bot._type.Name)
                 {
                     case ("Titan Medic (B)"):
@@ -179,7 +177,7 @@ namespace InfServer.Script.GameType_Multi
 
                         medic._team = team;
                         medic.type = BotType.Medic;
-                        medic.init();
+                        medic.init(null);
 
                         medic.Destroyed += delegate (Vehicle bot)
                         {

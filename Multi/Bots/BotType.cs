@@ -8,6 +8,11 @@ namespace InfServer.Script.GameType_Multi
     public enum BotType
     {
         Medic,
-        Marine
+        Marine,
+        Dropship,
+        Ripper,
+        Gunship,
+        EliteMarine,
+        EliteHeavy
     }
 }

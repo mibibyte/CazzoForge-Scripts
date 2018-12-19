@@ -19,7 +19,7 @@ namespace InfServer.Script.GameType_Multi
 {   // Script Class
     /// Provides the interface between the script and bot
     ///////////////////////////////////////////////////////
-    public partial class Marine : Bot
+    public partial class Ripper : Bot
     {
         #region Steer Delegates
         /// <summary>
@@ -52,20 +52,20 @@ namespace InfServer.Script.GameType_Multi
             if (_target == null)
                 return Vector3.Zero;
 
-            List<Vehicle> marines = _arena.getVehiclesInRange(vehicle.state.positionX, vehicle.state.positionY, 500,
+            List<Vehicle> rippers = _arena.getVehiclesInRange(vehicle.state.positionX, vehicle.state.positionY, 500,
                                                                 delegate (Vehicle v)
-                                                                { return (v is Marine); });
-            IEnumerable<IVehicle> marinebots = marines.ConvertAll<IVehicle>(
+                                                                { return (v is Ripper); });
+            IEnumerable<IVehicle> ripperbots = rippers.ConvertAll<IVehicle>(
                 delegate (Vehicle v)
                 {
-                    return (v as Marine).Abstract;
+                    return (v as Ripper).Abstract;
                 }
             );
 
-            Vector3 seperationSteer = vehicle.SteerForSeparation(_seperation, -0.707f, marinebots);
+            Vector3 seperationSteer = vehicle.SteerForSeparation(_seperation, -0.707f, ripperbots);
             Vector3 pursuitSteer = vehicle.SteerForPursuit(_target._baseVehicle.Abstract, 0.2f);
 
-            return (seperationSteer * 2.3f) + pursuitSteer;
+            return (seperationSteer * 1.7f) + pursuitSteer;
         }
 
         /// <summary>

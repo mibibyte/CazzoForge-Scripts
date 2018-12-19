@@ -19,7 +19,7 @@ namespace InfServer.Script.GameType_Multi
 {   // Script Class
     /// Provides the interface between the script and bot
     ///////////////////////////////////////////////////////
-    public partial class Marine : Bot
+    public partial class EliteMarine : Bot
     {   ///////////////////////////////////////////////////
         // Member Variables
         ///////////////////////////////////////////////////
@@ -46,7 +46,7 @@ namespace InfServer.Script.GameType_Multi
         private int _tickLastRadarDot;
 
 
-        public Marine(VehInfo.Car type, Helpers.ObjectState state, Arena arena)
+        public EliteMarine(VehInfo.Car type, Helpers.ObjectState state, Arena arena)
             : base(type, state, arena,
             new SteeringController(type, state, arena))
         {
@@ -59,7 +59,7 @@ namespace InfServer.Script.GameType_Multi
 
             _actionQueue = new List<Action>();
 
-
+           
 
         }
 
@@ -141,24 +141,24 @@ namespace InfServer.Script.GameType_Multi
         {
             //Does our path need to be updated?
             if (now - _tickLastPath > c_pathUpdateInterval)
-            {   //Update it!
-                _tickLastPath = int.MaxValue;
+            {    //Update it!
+                    _tickLastPath = int.MaxValue;
 
-                _arena._pathfinder.queueRequest(
-                    (short)(_state.positionX / 16), (short)(_state.positionY / 16),
-                    (short)(_target._state.positionX / 16), (short)(_target._state.positionY / 16),
-                    delegate (List<Vector3> path, int pathLength)
-                    {
-                        if (path != null)
-                        {   
-                                _path = path;
-                                _pathTarget = 1;
+                    _arena._pathfinder.queueRequest(
+                        (short)(_state.positionX / 16), (short)(_state.positionY / 16),
+                        (short)(_target._state.positionX / 16), (short)(_target._state.positionY / 16),
+                        delegate (List<Vector3> path, int pathLength)
+                        {
+                            if (path != null)
+                            {   //Is the path too long?
+                                    _path = path;
+                                    _pathTarget = 1;
+                            }
+
+                            _tickLastPath = now;
                         }
-
-                        _tickLastPath = now;
-                    }
-                );
+                    );
+                }
             }
         }
     }
-}

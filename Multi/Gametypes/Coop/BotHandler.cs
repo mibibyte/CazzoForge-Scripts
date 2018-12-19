@@ -15,47 +15,45 @@ namespace InfServer.Script.GameType_Multi
 {
     public partial class Coop
     {
-        private int _lastMedicWave;
-        private int _lastMarineWave;
-        private int _lastFriendlyMedic;
-        private int _marineSpawnDelay = 25000;
-        private int _medicSpawnDelay = 30000;
         public List<Bot> _bots;
-        public bool spawnBots;
+        public Dictionary<ushort, Player> _targetedPlayers;
 
         public void pollBots(int now)
         {
-            if (spawnBots && _arena._bGameRunning)
+            if (spawnBots && _arena._bGameRunning && _bots.Count < _botMax)
             {
+                int flagcount = _flags.Count(f => f.team == _team);
 
-                //Does team1 need a medic?
+                //Check if we should be spawning any special waves
+                checkForWaves(now, flagcount);
+
+                //Do we need to spawn a dropship?
+                if (now - _lastSupplyDrop > _supplyDropDelay)
+                {
+                    _lastSupplyDrop = now;
+                    spawnDropShip(_team);
+                }
+
+                //Does our player team need a medic?
                 if (now - _lastFriendlyMedic > _medicSpawnDelay)
                 {
                     int botcount = _bots.Where(b => b._type.Id == 128 && b._team == _team).Count();
-
-                    if (botcount < 2)
-                    {
-                        _lastFriendlyMedic = now;
-                        spawnMedic(_team);
-                    }
-                }
-
-                //Does team1 need a medic?
-                if (now - _lastMedicWave > _medicSpawnDelay)
-                {
-                    int botcount = _bots.Where(b => b._type.Id == 301 && b._team == _botTeam).Count();
                     int playercount = _team.ActivePlayerCount;
-                    int max = playercount * 1;
+                    int max = Convert.ToInt32(playercount * 0.30);
+
+                    //Always give atleast one...
+                    if (playercount == 1 || playercount == 2)
+                        max = 1;
 
                     if (botcount < max)
                     {
                         int add = (max - botcount);
-                        _lastMedicWave = now;
-                        spawnMedicWave(_botTeam, add);
+                        _lastFriendlyMedic = now;
+                        spawnMedicWave(_team, add);
                     }
                 }
-              
-                //Does team1 need a marine?
+
+                //Does bot team need a marine?
                 if (now - _lastMarineWave > _marineSpawnDelay)
                 {
                     int botcount = _bots.Where(b => b._type.Id == 131 && b._team == _botTeam).Count();
@@ -69,118 +67,88 @@ namespace InfServer.Script.GameType_Multi
                         spawnMarineWave(_botTeam, add);
                     }
                 }
-            }
 
-            foreach (Bot bot in _bots)
-            {
-
-
-                switch (bot._type.Name)
+                //Does bot team need a ripper?
+                if (now - _lastRipperWave > _ripperSpawnDelay)
                 {
-                    case ("Titan Medic (B)"):
-                        {
-                            IEnumerable<Player> enemies = _arena.Players.Where(p => p._team != bot._team);
-                            if (!bot.IsDead)
-                            {
-                                Helpers.Player_RouteExplosion(bot._team.ActivePlayers, 1131, bot._state.positionX, bot._state.positionY, 0, 0, 0);
-                                Helpers.Player_RouteExplosion(enemies, 1130, bot._state.positionX, bot._state.positionY, 0, 0, 0);
-                            }
-                        }
-                        break;
+                    int botcount = _bots.Where(b => b._type.Id == 145 && b._team == _botTeam).Count();
+                    int playercount = _team.ActivePlayerCount;
+                    int max = (int)(playercount * 0.75);
 
-                    case ("Collective Medic (B)"):
-                        {
-                            IEnumerable<Player> enemies = _arena.Players.Where(p => p._team != bot._team);
-                       
-                            if (!bot.IsDead)
-                            {
-                                Helpers.Player_RouteExplosion(bot._team.ActivePlayers, 1131, bot._state.positionX, bot._state.positionY, 0, 0, 0);
-                                Helpers.Player_RouteExplosion(enemies, 1130, bot._state.positionX, bot._state.positionY, 0, 0, 0);
-                            }
-                        }
-                        break;
-
-                    case ("Collective Marine (B)"):
-                        {
-
-                            IEnumerable<Player> enemies = _arena.Players.Where(p => p._team != bot._team);
-
-                            if (!bot.IsDead)
-                            {
-                                Helpers.Player_RouteExplosion(bot._team.ActivePlayers, 1131, bot._state.positionX, bot._state.positionY, 0, 0, 0);
-                                Helpers.Player_RouteExplosion(enemies, 1130, bot._state.positionX, bot._state.positionY, 0, 0, 0);
-                            }
-                        }
-                        break;
-
-                    case ("Titan Marine (B)"):
-                        { 
-
-                            IEnumerable<Player> enemies = _arena.Players.Where(p => p._team != bot._team);
-
-                            if (!bot.IsDead)
-                            {
-                                Helpers.Player_RouteExplosion(bot._team.ActivePlayers, 1131, bot._state.positionX, bot._state.positionY, 0, 0, 0);
-                                Helpers.Player_RouteExplosion(enemies, 1130, bot._state.positionX, bot._state.positionY, 0, 0, 0);
-                            }
-                        }
-                        break;
+                    if (botcount < max)
+                    {
+                        int add = (max - botcount);
+                        _lastMarineWave = now;
+                        spawnRipperWave(_botTeam, add);
+                    }
                 }
-
             }
         }
 
-        public void spawnMedic(Team team)
-        {
-            Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(_team, true);
-
-            if (!newBot(team, BotType.Medic, warpPoint))
-                Log.write(TLog.Warning, "Unable to spawn medic bot");
-
-        }
-
-        public void spawnMedicWave(Team team, int count)
-        {
-            Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(_botTeam, true);
-            Helpers.ObjectState openPoint = new Helpers.ObjectState();
-
-            for (int i = 0; i < count; i++)
-            {
-                warpPoint = _baseScript.findFlagWarp(_botTeam, true);
-                openPoint = _baseScript.findOpenWarp(_botTeam, _arena, warpPoint.positionX, warpPoint.positionY, 800);
-
-
-                if (!newBot(team, BotType.Medic, openPoint))
-                    Log.write(TLog.Warning, "Unable to spawn medic bot");
-            }
-
-            _arena.triggerMessage(0, 500, "Enemy reinforcements have arrived!");
-        }
-
-        public void spawnMarineWave(Team team, int count)
-        {
-            Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(_botTeam, true);
-            Helpers.ObjectState openPoint = new Helpers.ObjectState();
-
-            for (int i = 0; i < count; i++)
-            {
-                warpPoint = _baseScript.findFlagWarp(_botTeam, true);
-                openPoint = _baseScript.findOpenWarp(_botTeam, _arena, warpPoint.positionX, warpPoint.positionY, 800);
-
-                if (!newBot(team, BotType.Marine, openPoint))
-                    Log.write(TLog.Warning, "Unable to spawn marine bot");
-            }
-
-            _arena.triggerMessage(0, 500, "Enemy reinforcements have arrived!");
-        }
-
-        private bool newBot(Team team, BotType type, Helpers.ObjectState state = null)
+     
+        private bool newBot(Team team, BotType type, Vehicle target, Player owner, Helpers.ObjectState state = null)
         {
             if (_bots == null)
                 _bots = new List<Bot>();
 
+            //What kind is it?
             switch (type)
             {
+                #region Dropship
+                case BotType.Dropship:
+                    {
+                        //Collective vehicle
+                        ushort vehid = 134;
+
+                        //Titan vehicle?
+                        if (team._name == "Titan Militia")
+                            vehid = 134;
+
+                        Dropship medic = _arena.newBot(typeof(Dropship), vehid, team, null, state, null) as Dropship;
+                        if (medic == null)
+                            return false;
+
+                        medic._team = team;
+                        medic.type = BotType.Dropship;
+                        medic.init(state, _baseScript);
+
+                        medic.Destroyed += delegate (Vehicle bot)
+                        {
+                            _bots.Remove((Bot)bot);
+                        };
+
+                        _bots.Add(medic);
+                    }
+                    break;
+                #endregion
+                #region Gunship
+                case BotType.Gunship:
+                    {
+                        //Collective vehicle
+                        ushort vehid = 134;
+
+                        //Titan vehicle?
+                        if (team._name == "Titan Militia")
+                            vehid = 147;
+
+                        Gunship gunship = _arena.newBot(typeof(Gunship), vehid, team, owner, state, null) as Gunship;
+                        if (gunship == null)
+                            return false;
+
+                        gunship._team = team;
+                        gunship.type = BotType.Dropship;
+                        gunship.init(state, _baseScript, target, owner);
+
+                        gunship.Destroyed += delegate (Vehicle bot)
+                        {
+                            _bots.Remove((Bot)bot);
+                        };
+
+                        _bots.Add(gunship);
+                    }
+                    break;
+                #endregion
+                #region Medic
                 case BotType.Medic:
                     {
                         //Collective vehicle
@@ -197,7 +165,7 @@ namespace InfServer.Script.GameType_Multi
 
                         medic._team = team;
                         medic.type = BotType.Medic;
-                        medic.init();
+                        medic.init(this);
 
                         medic.Destroyed += delegate (Vehicle bot)
                         {
@@ -208,7 +176,66 @@ namespace InfServer.Script.GameType_Multi
                         _bots.Add(medic);
                     }
                     break;
+                #endregion
+                #region Elite Heavy
+                case BotType.EliteHeavy:
+                    {
+                        //Collective vehicle
+                        ushort vehid = 148;
 
+                        //Titan vehicle?
+                        if (team._name == "Titan Militia")
+                            vehid = 128;
+
+                        EliteHeavy heavy = _arena.newBot(typeof(EliteHeavy), vehid, team, null, state, null) as EliteHeavy;
+
+                        if (heavy == null)
+                            return false;
+
+                        heavy._team = team;
+                        heavy.type = BotType.EliteHeavy;
+                        heavy.init();
+
+                        heavy.Destroyed += delegate (Vehicle bot)
+                        {
+                            _bots.Remove((Bot)bot);
+
+                        };
+
+                        _bots.Add(heavy);
+                    }
+                    break;
+                #endregion
+                #region Elite Marine
+                case BotType.EliteMarine:
+                    {
+                        //Collective vehicle
+                        ushort vehid = 146;
+
+                        //Titan vehicle?
+                        if (team._name == "Titan Militia")
+                            vehid = 128;
+
+                        EliteMarine elitemarine = _arena.newBot(typeof(EliteMarine), vehid, team, null, state, null) as EliteMarine;
+
+                        if (elitemarine == null)
+                            return false;
+
+                        elitemarine._team = team;
+                        elitemarine.type = BotType.EliteHeavy;
+                        elitemarine.init();
+
+                        elitemarine.Destroyed += delegate (Vehicle bot)
+                        {
+                            _bots.Remove((Bot)bot);
+
+                        };
+
+                        _bots.Add(elitemarine);
+                    }
+                    break;
+                #endregion
+                #region Marine
                 case BotType.Marine:
                     {
                         //Collective vehicle
@@ -236,8 +263,36 @@ namespace InfServer.Script.GameType_Multi
                         _bots.Add(marine);
                     }
                     break;
+                #endregion
+                #region Ripper
+                case BotType.Ripper:
+                    {
+                        //Collective vehicle
+                        ushort vehid = 145;
 
+                        //Titan vehicle?
+                        if (team._name == "Titan Militia")
+                            vehid = 133;
 
+                        Ripper ripper = _arena.newBot(typeof(Ripper), vehid, team, null, state, null) as Ripper;
+
+                        if (ripper == null)
+                            return false;
+
+                        ripper._team = team;
+                        ripper.type = BotType.Ripper;
+                        ripper.init();
+
+                        ripper.Destroyed += delegate (Vehicle bot)
+                        {
+                            _bots.Remove((Bot)bot);
+
+                        };
+
+                        _bots.Add(ripper);
+                    }
+                    break;
+                    #endregion
             }
             return true;
         }
