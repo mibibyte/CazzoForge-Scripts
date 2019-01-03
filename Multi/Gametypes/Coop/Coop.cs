@@ -125,6 +125,8 @@ namespace InfServer.Script.GameType_Multi
             _firstBoss = false;
             _secondBoss = false;
             _lastSupplyDrop = Environment.TickCount;
+            _lastHPChange = Environment.TickCount;
+            hpMultiplier = 0.0;
 
             _flags = _arena._flags.Values.OrderBy(f => f.posX).ToList();
             _allPoints = new List<CapturePoint>();
@@ -142,7 +144,7 @@ namespace InfServer.Script.GameType_Multi
                 if (flagcount >= 2)
                     flag.team = _botTeam;
                 flagcount++;
-                CapturePoint point = new CapturePoint(_arena, flag);
+                CapturePoint point = new CapturePoint(_arena, flag, _baseScript);
                 point.Captured += delegate (Arena.FlagState capturedFlag)
                 {
                     int playercount = _team.ActivePlayerCount;
@@ -266,11 +268,14 @@ namespace InfServer.Script.GameType_Multi
 
         public bool playerUnspec(Player player)
         {
-			 if (_team.ActivePlayerCount >= 7) 
-				 {
-					player.sendMessage(0, String.Format("This arena's Co-Op Mode is currently full - Please try a different arena , {0}", player._alias));
-					return false;
-				 }
+            //if (_arena._name != "[Co-Op] Public4")
+           // {
+               // if (_team.ActivePlayerCount >= 7)
+              //  {
+               //     player.sendMessage(0, String.Format("This arena's Co-Op Mode is currently full - Please try a different arena, {0}", player._alias));
+                //    return false;
+               // }
+           // }
             player.unspec(_team);
             return true;
         }
@@ -370,7 +375,7 @@ namespace InfServer.Script.GameType_Multi
                 if (_baseScript.StatsCurrent(p) == null)
                     return "";
 
-                Rewards.Jackpot.Reward reward = jackpot._playerRewards.First(r => r.player == p);
+                Rewards.Jackpot.Reward reward = jackpot._playerRewards.FirstOrDefault(r => r.player == p);
 
                 if (reward == null)
                    return "";

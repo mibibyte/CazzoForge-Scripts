@@ -1,25 +1,15 @@
-﻿using System;
-using System.Linq;
-using System.Collections.Generic;
-using System.IO;
-using System.Runtime.InteropServices;
-using System.Threading;
-
-
+﻿using Axiom.Math;
+using InfServer.Bots;
 using InfServer.Game;
 using InfServer.Protocol;
-using InfServer.Scripting;
-using InfServer.Bots;
-
-using Assets;
-using Axiom.Math;
-using Bnoerj.AI.Steering;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace InfServer.Script.GameType_Multi
 {   // Script Class
     /// Provides the interface between the script and bot
     ///////////////////////////////////////////////////////
-    public partial class EliteHeavy : Bot
+    public partial class ExoHeavy : Bot
     {
 
         private List<Action> _actionQueue;
@@ -65,15 +55,14 @@ namespace InfServer.Script.GameType_Multi
 
                     if (!bFleeing)
                     {
-                        //Should we be firing our rifle?
-                        if (distance <= fireDist && distance > sgDist)
+                        //Should we be firing our PODS?
+                        if (distance <= fireDist && distance > stompDist)
                         {
                             if (_weapon.ItemID != AssetManager.Manager.getItemByID(_type.InventoryItems[0]).id)
-                            _weapon.equip(AssetManager.Manager.getItemByID(_type.InventoryItems[0]));
+                                _weapon.equip(AssetManager.Manager.getItemByID(_type.InventoryItems[0]));
 
                             if (_weapon.ableToFire())
                             {
-                                _movement.freezeMovement(800);
                                 int aimResult = _weapon.getAimAngle(_target._state);
 
                                 if (_weapon.isAimed(aimResult))
@@ -86,32 +75,11 @@ namespace InfServer.Script.GameType_Multi
                                 steering.angle = aimResult;
                             }
                         }
-                        //Should we be firing our SG?
-                        else if (distance <= sgDist && distance > meleeDist)
+                        //Should we be firing our melee?
+                        else if (distance <= stompDist)
                         {
                             if (_weapon.ItemID != AssetManager.Manager.getItemByID(_type.InventoryItems[1]).id)
                                 _weapon.equip(AssetManager.Manager.getItemByID(_type.InventoryItems[1]));
-
-                            if (_weapon.ableToFire())
-                            {
-                                int aimResult = _weapon.getAimAngle(_target._state);
-
-                                if (_weapon.isAimed(aimResult))
-                                {   //Spot on! Fire?
-                                    _itemUseID = _weapon.ItemID;
-                                    _weapon.shotFired();
-                                }
-
-                                steering.bSkipAim = true;
-                                steering.angle = aimResult;
-                            }
-
-                        }
-                        //Should we be firing our melee?
-                        else if (distance <= meleeDist)
-                        {
-                            if (_weapon.ItemID != AssetManager.Manager.getItemByID(_type.InventoryItems[2]).id)
-                                _weapon.equip(AssetManager.Manager.getItemByID(_type.InventoryItems[2]));
 
                             if (_weapon.ableToFire())
                             {

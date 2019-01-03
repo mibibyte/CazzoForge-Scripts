@@ -8,6 +8,10 @@ namespace InfServer.Script.GameType_Multi
     public abstract class Settings
     {
 
+        //Event variables
+        public TimeSpan hhStart = new TimeSpan(22, 0, 0);
+        public TimeSpan hhEnd = new TimeSpan(22, 0, 0);
+
         //KillRewards
         public const int c_baseReward = 25;
         public const double c_pointMultiplier = 2;

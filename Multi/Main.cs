@@ -28,6 +28,7 @@ namespace InfServer.Script.GameType_Multi
         private List<string> _earlyAccessList;
         private bool _isEarlyAccess;
         public bool bJackpot;
+        public Dictionary<ushort, Arena.ItemDrop> _privateLoot;
 
         //Addon Classes
         Upgrade _upgrader;
@@ -81,9 +82,10 @@ namespace InfServer.Script.GameType_Multi
             _coop = new Coop(_arena, this);
 
             //Load any modules
-            _loot = new Loot(_arena);
+            _loot = new Loot(_arena, this);
             _crafting = new Crafting();
             _loot.Load(_arena._server);
+            _privateLoot = new Dictionary<ushort, Arena.ItemDrop>();
 
             //Default to Conquest
             _gameType = Settings.GameTypes.Conquest;
@@ -91,7 +93,7 @@ namespace InfServer.Script.GameType_Multi
 
             _isEarlyAccess = false;
 
-            if (_arena._name == "[Public] Co-Op")
+            if (_arena._name.StartsWith("[Co-Op]"))
                 _gameType = Settings.GameTypes.Coop;
             else
             {
@@ -128,6 +130,11 @@ namespace InfServer.Script.GameType_Multi
                 //Stop the game and reset voting
                 _arena.gameEnd();
 
+            }
+
+            if (bMinor)
+            {
+                if (isHappyHour())
             }
 
 
@@ -422,6 +429,25 @@ namespace InfServer.Script.GameType_Multi
             if (StatsCurrent(player) == null)
                 createPlayerStats(player);
 
+            //Hide any private loot items
+            foreach (Arena.ItemDrop item in _privateLoot.Values)
+            {
+                Arena.ItemDrop spoofed = new Arena.ItemDrop();
+
+                spoofed.item = item.item;
+                spoofed.id = item.id;
+                spoofed.quantity = (short)item.quantity;
+                spoofed.positionX = 2304;
+                spoofed.positionY = 4880;
+                spoofed.relativeID = item.relativeID;
+                spoofed.freq = item.freq;
+
+                spoofed.owner = item.owner; //For bounty abuse upon pickup
+
+
+                Helpers.Object_ItemDrop(player, spoofed);
+            }
+
             //Defer to our current gametype handler!
             switch (_gameType)
             {
@@ -534,6 +560,13 @@ namespace InfServer.Script.GameType_Multi
         {   //Game finished, perhaps start a new one
             _tickGameStarted = 0;
             _tickGameStarting = 0;
+
+            //Clean up any bots
+            //foreach (Bot bot in _coop._bots)
+                //bot.destroy(false);
+
+            //foreach (Bot bot in _cq._bots)
+                //bot.destroy(false);
 
             //Defer to our current gametype handler!
             switch (_gameType)
@@ -660,6 +693,9 @@ namespace InfServer.Script.GameType_Multi
             //Update his bounty.
             if (drop.owner != player) //Bug abuse fix for people dropping and picking up items to get bounty
                 player.Bounty += drop.item.prizeBountyPoints;
+
+            if (_privateLoot.ContainsKey(drop.id))
+                _privateLoot.Remove(drop.id);
 
             //Remove the item from player's clients
             Helpers.Object_ItemDropUpdate(_arena.Players, drop.id, (ushort)drop.quantity);
@@ -929,6 +965,17 @@ namespace InfServer.Script.GameType_Multi
             if (killer != null && victim != null && victim._bounty >= 1200)
                 _arena.sendArenaMessage(string.Format("{0} has ended {1}'s bounty.", killer._alias, victim._alias), 8);
 
+
+            //Check for players in the share radius
+            List<Player> playersInRadius = _arena.getPlayersInRange(victim._state.positionX, victim._state.positionY, 450, false);
+
+            //Killer is always added...
+            if (!playersInRadius.Contains(killer))
+                playersInRadius.Add(killer);
+
+            //Try some lootin
+            _loot.tryLootDrop(playersInRadius, victim, victim._state.positionX, victim._state.positionY);
+
             //Now defer to our current gametype handler!
             switch (_gameType)
             {
@@ -1170,7 +1217,7 @@ namespace InfServer.Script.GameType_Multi
             if (command.Equals("addbot"))
             {
                 if (String.IsNullOrEmpty(payload))
-                {;
+                {
                     return false;
                 }
 
@@ -1179,52 +1226,22 @@ namespace InfServer.Script.GameType_Multi
                     _coop.spawnEliteMarine(player, _coop._botTeam);
                     return false;
                 }
+                if (payload.Equals("exolight"))
+                {
+                    _coop.spawnExoLight(_coop._botTeam);
+                    return false;
+                }
+                if (payload.Equals("exoheavy"))
+                {
+                    _coop.spawnExoHeavy(_coop._botTeam);
+                    return false;
+                }
                 if (payload.Equals("eliteheavy"))
                 {
                     _coop.spawnEliteHeavy(player, _coop._botTeam);
                     return false;
                 }
             }
-
-
-                if (command.Equals("pop"))
-            {
-
-                int id;
-                bool isNumeric = int.TryParse(payload, out id);
-
-                if (!isNumeric)
-                    return false;
-
-                for (int i = 0; i < id; i++)
-                {
-                    Client<Player> client = new Client<Player>(true);
-                    client._ipe = new System.Net.IPEndPoint(System.Net.IPAddress.Parse("127.0.0.1"), 1337);
-                    Player p = _arena._server.newPlayer(client, String.Format("Guest{0}", i));
-
-                    if (p != null)
-                    _fakePlayers.Add(p);
-                }
-
-                return false;
-            }
-
-            if (command.Equals("depop"))
-            {
-                if (_fakePlayers == null)
-                    return false;
-
-
-                foreach (Player p in _fakePlayers)
-                {
-                    _arena._server.lostPlayer(p);
-                }
-
-                _fakePlayers.Clear();
-
-                return false;
-            }
-
 
             if (command.Equals("bots"))
             {

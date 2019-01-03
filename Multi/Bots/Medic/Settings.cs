@@ -29,7 +29,7 @@ namespace InfServer.Script.GameType_Multi
 
         private const int c_MaxPath = 350;
 
-        public const int c_pathUpdateInterval = 12000;      //The amount of ticks before a bot will renew it's path
+        public const int c_pathUpdateInterval = 15000;      //The amount of ticks before a bot will renew it's path
         public const int c_MaxRespawnDist = 1500;           //The maximum distance bots can be spawned from the players
         public const int c_DistanceLeeway = 500;
         public const int c_lowHealth = 68;                  //The percentage we consider a player to be low health

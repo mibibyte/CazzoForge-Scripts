@@ -85,6 +85,9 @@ namespace InfServer.Script.GameType_Multi
 
             for (int i = 0; i < count; i++)
             {
+                if (_bots.Count >= _botMax)
+                    break;
+
                 BotType type = BotType.Marine;
                 bool bRipper = (rand.Next(0, 100) <= 35);
 
@@ -177,6 +180,32 @@ namespace InfServer.Script.GameType_Multi
         }
 
 
+        public void spawnExoLight(Team team)
+        {
+            Random rand = new Random();
+
+            Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(team, true);
+
+            short randomoffset = (short)(warpPoint.positionX - rand.Next(0, 600));
+            warpPoint.positionX = randomoffset;
+
+            if (!newBot(team, BotType.ExoLight, null, null, warpPoint))
+                Log.write(TLog.Warning, "Unable to spawn bot");
+        }
+
+        public void spawnExoHeavy(Team team)
+        {
+            Random rand = new Random();
+
+            Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(team, true);
+
+            short randomoffset = (short)(warpPoint.positionX - rand.Next(0, 600));
+            warpPoint.positionX = randomoffset;
+
+            if (!newBot(team, BotType.ExoHeavy, null, null, warpPoint))
+                Log.write(TLog.Warning, "Unable to spawn bot");
+        }
+
         public void checkForWaves(int now, int flagcount)
         {
             switch (flagcount)
@@ -189,9 +218,9 @@ namespace InfServer.Script.GameType_Multi
 
                             _arena.sendArenaMessage("!The enemy has sent extra reinforcements in a last ditch attempt to stop you!", 4);
                             int playercount = _team.ActivePlayerCount;
-                            int max = playercount * 3;
+                            int max = playercount * 1;
                             spawnRandomWave(_botTeam, max);
-                            spawnEliteHeavy(_botTeam);
+                            spawnExoLight(_botTeam);
                         }
                     }
                     break;
@@ -205,8 +234,9 @@ namespace InfServer.Script.GameType_Multi
                             spawnEliteHeavy(_botTeam);
                             spawnEliteMarine(_botTeam);
                             int playercount = _team.ActivePlayerCount;
-                            int max = playercount * 3;
+                            int max = Convert.ToInt32(playercount * 1.25);
                             spawnRandomWave(_botTeam, max);
+                            spawnExoHeavy(_botTeam);
                         }
                     }
                     break;
@@ -218,7 +248,7 @@ namespace InfServer.Script.GameType_Multi
 
                             _arena.sendArenaMessage("!The enemy has sent extra reinforcements in a last ditch attempt to stop you!", 4);
                             int playercount = _team.ActivePlayerCount;
-                            int max = playercount * 3;
+                            int max = Convert.ToInt32(playercount * 1.50);
                             spawnRandomWave(_botTeam, max);
                             spawnEliteMarine(_botTeam);
                         }
@@ -234,8 +264,9 @@ namespace InfServer.Script.GameType_Multi
                             spawnEliteHeavy(_botTeam);
                             spawnEliteMarine(_botTeam);
                             int playercount = _team.ActivePlayerCount;
-                            int max = playercount * 3;
+                            int max = Convert.ToInt32(playercount * 1.75);
                             spawnRandomWave(_botTeam, max);
+                            spawnExoLight(_botTeam);
                         }
                     }
                     break;
@@ -247,10 +278,11 @@ namespace InfServer.Script.GameType_Multi
 
                             _arena.sendArenaMessage("!The enemy has sent extra reinforcements in a last ditch attempt to stop you!", 4);
                             int playercount = _team.ActivePlayerCount;
-                            int max = playercount * 5;
+                            int max = Convert.ToInt32(playercount * 3);
                             spawnRandomWave(_botTeam, max);
                             spawnEliteHeavy(_botTeam);
                             spawnEliteMarine(_botTeam);
+                            spawnExoHeavy(_botTeam);
                         }
                     }
                     break;

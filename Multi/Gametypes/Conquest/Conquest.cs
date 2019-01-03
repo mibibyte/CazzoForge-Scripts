@@ -208,7 +208,7 @@ namespace InfServer.Script.GameType_Multi
                     flag.team = cqTeam2;
                 flagcount++;
 
-                _allPoints.Add(new CapturePoint(_arena, flag));
+                _allPoints.Add(new CapturePoint(_arena, flag, _baseScript));
             }
 
             foreach (Player p in _arena.Players)

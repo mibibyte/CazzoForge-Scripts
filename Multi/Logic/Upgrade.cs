@@ -140,11 +140,11 @@ namespace InfServer.Script.GameType_Multi
             {
                 if (luckydice >= 100)
                 {
-                    modifier = Convert.ToDouble((double)100 / 1000);
+                    modifier = Convert.ToDouble((double)100 / 100);
                     luckydice = 100;
                 }
                 else
-                    modifier = Convert.ToDouble((double)luckydice / 1000);
+                    modifier = Convert.ToDouble((double)luckydice / 100);
                 player.sendMessage(0, String.Format("Upgrade chances increased by {0}% thanks to your Lucky Dice", luckydice));
                 player.inventoryModify(2018, -luckydice);
             }
@@ -211,7 +211,7 @@ namespace InfServer.Script.GameType_Multi
             double chance = (_downgradeChances[current] - modifier);
             double random = rand.NextDouble();
 
-            //Sanitiy
+            //Sanity
             if (chance < 0)
                 chance = 0;
 

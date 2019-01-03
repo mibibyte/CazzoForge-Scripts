@@ -47,10 +47,10 @@ namespace InfServer.Script.GameType_Multi
             List<LootType> types = new List<LootType>();
 
             //Read in any sub-settings within the description
-            if (description.Length >= 4 && description.Substring(0, 9).ToLower().Equals("settings="))
+            if (description.Length >= 4 && description.Substring(0, 7).ToLower().Equals("reward="))
             {
                 string[] lootparams;
-                lootparams = Regex.Split(description.Substring(9, description.Length - 9), ",(?=(?:[^\']*\'[^\']*\')*(?![^\']*\'))");
+                lootparams = Regex.Split(description.Substring(7, description.Length - 7), ",(?=(?:[^\']*\'[^\']*\')*(?![^\']*\'))");
 
 
                 foreach (string lootparam in lootparams)

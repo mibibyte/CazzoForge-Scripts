@@ -39,7 +39,7 @@ namespace InfServer.Script.GameType_Multi
 
         public bool spawnBots;
 
-        private int _botMax = 45;
+        private int _botMax = 30;
 
     }
 }

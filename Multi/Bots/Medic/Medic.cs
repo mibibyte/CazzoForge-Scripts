@@ -194,7 +194,7 @@ namespace InfServer.Script.GameType_Multi
             bool bAttacking = false;
             bool bBackPedal = false;
             //Are we not healing or following anyone? lets shoot some bots!
-            if (!bHealing)
+            if (!bHealing && 1 < 0)
             {
                 if (_botTarget == null || !isValidAttackTarget(_botTarget))
                 {

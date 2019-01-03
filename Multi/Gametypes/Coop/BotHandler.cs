@@ -17,15 +17,31 @@ namespace InfServer.Script.GameType_Multi
     {
         public List<Bot> _bots;
         public Dictionary<ushort, Player> _targetedPlayers;
+        public double hpMultiplier = 0.10;
+        public int _lastHPChange;
 
         public void pollBots(int now)
         {
-            if (spawnBots && _arena._bGameRunning && _bots.Count < _botMax)
+            if (spawnBots && _arena._bGameRunning && now - _lastHPChange >= 120000)
+            {
+                _lastHPChange = now;
+                hpMultiplier = hpMultiplier + 0.07;
+
+                _arena.sendArenaMessage("$The enemy is starting to increase their armor, Stay sharp!", 5);
+            }
+
+            if (_bots.Count >= _botMax)
+            {
+                Log.write(TLog.Warning, "Excessive bot spawning");
+                return;
+            }
+
+            if (spawnBots && _arena._bGameRunning)
             {
                 int flagcount = _flags.Count(f => f.team == _team);
 
                 //Check if we should be spawning any special waves
-                checkForWaves(now, flagcount);
+                checkForWaves(now, flagcount); 
 
                 //Do we need to spawn a dropship?
                 if (now - _lastSupplyDrop > _supplyDropDelay)
@@ -58,7 +74,7 @@ namespace InfServer.Script.GameType_Multi
                 {
                     int botcount = _bots.Where(b => b._type.Id == 131 && b._team == _botTeam).Count();
                     int playercount = _team.ActivePlayerCount;
-                    int max = playercount * 2;
+                    int max = Convert.ToInt32(playercount * 1);
 
                     if (botcount < max)
                     {
@@ -73,7 +89,7 @@ namespace InfServer.Script.GameType_Multi
                 {
                     int botcount = _bots.Where(b => b._type.Id == 145 && b._team == _botTeam).Count();
                     int playercount = _team.ActivePlayerCount;
-                    int max = (int)(playercount * 0.75);
+                    int max = (int)(playercount * 0.50);
 
                     if (botcount < max)
                     {
@@ -196,6 +212,9 @@ namespace InfServer.Script.GameType_Multi
                         heavy.type = BotType.EliteHeavy;
                         heavy.init();
 
+                        if (hpMultiplier != 0.0)
+                            heavy._state.health = Convert.ToInt16(heavy._type.Hitpoints + (heavy._type.Hitpoints * hpMultiplier));
+
                         heavy.Destroyed += delegate (Vehicle bot)
                         {
                             _bots.Remove((Bot)bot);
@@ -224,6 +243,9 @@ namespace InfServer.Script.GameType_Multi
                         elitemarine._team = team;
                         elitemarine.type = BotType.EliteHeavy;
                         elitemarine.init();
+
+                        if (hpMultiplier != 0.0)
+                            elitemarine._state.health = Convert.ToInt16(elitemarine._type.Hitpoints + (elitemarine._type.Hitpoints * hpMultiplier));
 
                         elitemarine.Destroyed += delegate (Vehicle bot)
                         {
@@ -254,6 +276,9 @@ namespace InfServer.Script.GameType_Multi
                         marine.type = BotType.Marine;
                         marine.init();
 
+                        if (hpMultiplier != 0.0)
+                            marine._state.health = Convert.ToInt16(marine._type.Hitpoints + (marine._type.Hitpoints * hpMultiplier));
+
                         marine.Destroyed += delegate (Vehicle bot)
                         {
                             _bots.Remove((Bot)bot);
@@ -283,6 +308,9 @@ namespace InfServer.Script.GameType_Multi
                         ripper.type = BotType.Ripper;
                         ripper.init();
 
+                        if (hpMultiplier != 0.0)
+                            ripper._state.health = Convert.ToInt16(ripper._type.Hitpoints + (ripper._type.Hitpoints * hpMultiplier));
+
                         ripper.Destroyed += delegate (Vehicle bot)
                         {
                             _bots.Remove((Bot)bot);
@@ -290,6 +318,70 @@ namespace InfServer.Script.GameType_Multi
                         };
 
                         _bots.Add(ripper);
+                    }
+                    break;
+                #endregion
+                #region ExoLight
+                case BotType.ExoLight:
+                    {
+                        //Collective vehicle
+                        ushort vehid = 149;
+
+                        //Titan vehicle?
+                        if (team._name == "Titan Militia")
+                            vehid = 133;
+
+                        ExoLight exo = _arena.newBot(typeof(ExoLight), vehid, team, null, state, null) as ExoLight;
+
+                        if (exo == null)
+                            return false;
+
+                        exo._team = team;
+                        exo.type = BotType.ExoLight;
+                        exo.init();
+
+                        if (hpMultiplier != 0.0)
+                            exo._state.health = Convert.ToInt16(exo._type.Hitpoints + (exo._type.Hitpoints * hpMultiplier));
+
+                        exo.Destroyed += delegate (Vehicle bot)
+                        {
+                            _bots.Remove((Bot)bot);
+
+                        };
+
+                        _bots.Add(exo);
+                    }
+                    break;
+                #endregion
+                #region ExoHeavy
+                case BotType.ExoHeavy:
+                    {
+                        //Collective vehicle
+                        ushort vehid = 430;
+
+                        //Titan vehicle?
+                        if (team._name == "Titan Militia")
+                            vehid = 133;
+
+                        ExoHeavy exo = _arena.newBot(typeof(ExoHeavy), vehid, team, null, state, null) as ExoHeavy;
+
+                        if (exo == null)
+                            return false;
+
+                        exo._team = team;
+                        exo.type = BotType.ExoHeavy;
+                        exo.init();
+
+                        if (hpMultiplier != 0.0)
+                            exo._state.health = Convert.ToInt16(exo._type.Hitpoints + (exo._type.Hitpoints * hpMultiplier));
+
+                        exo.Destroyed += delegate (Vehicle bot)
+                        {
+                            _bots.Remove((Bot)bot);
+
+                        };
+
+                        _bots.Add(exo);
                     }
                     break;
                     #endregion

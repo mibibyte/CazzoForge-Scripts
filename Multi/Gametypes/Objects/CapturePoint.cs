@@ -27,7 +27,9 @@ namespace InfServer.Script.GameType_Multi
         private List<Arena.FlagState> _flags;
         private int tickLastWave;
         private int tickLastPointer;
+        private int tickStartCapture;
         public event Action<Arena.FlagState> Captured;	//Called when the point has been captured
+        private Script_Multi _baseScript;
 
 
         private List<Player> players;
@@ -37,13 +39,14 @@ namespace InfServer.Script.GameType_Multi
         private int _flagCaptureTime = 5;
 
 
-        public CapturePoint(Arena arena, Arena.FlagState flag)
+        public CapturePoint(Arena arena, Arena.FlagState flag, Script_Multi script)
         {
             _flag = flag;
             _arena = arena;
             players = new List<Player>();
             tickLastWave = 0;
             _flags = _arena._flags.Values.OrderBy(f => f.posX).ToList();
+            _baseScript = script;
 
             posX = _flag.posX;
             posY = _flag.posY;
@@ -111,34 +114,44 @@ namespace InfServer.Script.GameType_Multi
 
             if (attackers == 0 && defenders == 0)
             {
+                tickStartCapture = 0;
             }
 
             if (attackers > defenders)
             {
+
                 if (now - tickLastWave >= 2500)
                 {
-
                     Helpers.Player_RouteExplosion(_arena.Players, 3059, posX, posY, 0, 0, 0);
                     tickLastWave = now;
+                }
+
+                if (tickStartCapture != 0 && now - tickStartCapture >= 10000)
+                {
                     _arena.triggerMessage(0, 500, String.Format("{0} has taken control of the {1} capture point...", attacker._name, name));
                     _flags.FirstOrDefault(f => f == flag).team = attacker;
 
                     foreach (Player player in playersInArea.Where(p => p._team == flag.team))
-                    {
-                       // _baseScript.StatsCurrent(player).flagCaptures++;
-                    }
+                        _baseScript.StatsCurrent(player).flagCaptures++;
 
                     //Call our capture event, if it exists
                     if (Captured != null)
                         Captured(_flag);
+
+                    tickStartCapture = 0;
                 }
+                else if (tickStartCapture == 0)
+                    tickStartCapture = now;
             }
+
             if (defenders > attackers)
             {
                 if (now - tickLastWave >= 2500)
                 {
                     //Helpers.Player_RouteExplosion(_arena.Players, 3059, posX, posY, 0, 0, 0);
                     tickLastWave = now;
+
+                    tickStartCapture = 0;
                 }
             }
             else
@@ -150,6 +163,7 @@ namespace InfServer.Script.GameType_Multi
                         Helpers.Player_RouteExplosion(_arena.Players, 3060, posX, posY, 0, 0, 0);
                         tickLastWave = now;
                     }
+                    tickStartCapture = 0;
                 }
             }
         }

@@ -177,17 +177,24 @@ namespace InfServer.Script.GameType_Multi
             }
             else
             {
+                /* Old fixed Bot Rewards from CFG
                 killerCash = (int)cfg.bot.cashKillReward;
                 killerExp = (int)cfg.bot.expKillReward;
                 killerPoints = (int)cfg.bot.pointsKillReward;
                 killerBounty = (int)cfg.bot.fixedBountyToKiller;
+                */
+                killerBounty = Convert.ToInt32(((double)killer.Bounty / 100) * Settings.c_percentOfOwn); //We are now using base reward of 25 + 3% of current bounty
+                killerPoints = Convert.ToInt32((Settings.c_baseReward + killerBounty) * Settings.c_pointMultiplier);
+                killerCash = Convert.ToInt32((Settings.c_baseReward + killerBounty) * Settings.c_cashMultiplier);
+                killerExp = Convert.ToInt32((Settings.c_baseReward + killerBounty) * Settings.c_expMultiplier);
             }
 
             //Update his stats
             addCash(killer, killerCash);
             killer.Experience += killerExp;
             killer.KillPoints += killerPoints;
-            killer.Bounty += killerBounty;
+            //killer.Bounty += killerBounty;
+            killer.Bounty += (int)cfg.bot.fixedBountyToKiller;
 
 
             //Inform the killer..

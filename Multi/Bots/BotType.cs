@@ -13,6 +13,8 @@ namespace InfServer.Script.GameType_Multi
         Ripper,
         Gunship,
         EliteMarine,
-        EliteHeavy
+        EliteHeavy,
+        ExoLight,
+        ExoHeavy
     }
 }
