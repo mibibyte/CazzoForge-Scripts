@@ -17,18 +17,19 @@ namespace InfServer.Script.GameType_Multi
     {
         public List<Bot> _bots;
         public Dictionary<ushort, Player> _targetedPlayers;
-        public double hpMultiplier = 0.10;
+        public double hpMultiplier = 0.25;
         public int _lastHPChange;
 
         public void pollBots(int now)
         {
-            if (spawnBots && _arena._bGameRunning && now - _lastHPChange >= 120000)
+          /*  if (spawnBots && _arena._bGameRunning && now - _lastHPChange >= 120000)  
             {
                 _lastHPChange = now;
                 hpMultiplier = hpMultiplier + 0.07;
 
                 _arena.sendArenaMessage("$The enemy is starting to increase their armor, Stay sharp!", 5);
-            }
+            } */
+            
 
             if (_bots.Count >= _botMax)
             {
@@ -72,7 +73,7 @@ namespace InfServer.Script.GameType_Multi
                 //Does bot team need a marine?
                 if (now - _lastMarineWave > _marineSpawnDelay)
                 {
-                    int botcount = _bots.Where(b => b._type.Id == 131 && b._team == _botTeam).Count();
+                    int botcount = _bots.Where(b => ((b._type.Id == 131) || (b._type.Id == 151)) && b._team == _botTeam).Count();
                     int playercount = _team.ActivePlayerCount;
                     int max = Convert.ToInt32(playercount * 1);
 
@@ -87,7 +88,7 @@ namespace InfServer.Script.GameType_Multi
                 //Does bot team need a ripper?
                 if (now - _lastRipperWave > _ripperSpawnDelay)
                 {
-                    int botcount = _bots.Where(b => b._type.Id == 145 && b._team == _botTeam).Count();
+                    int botcount = _bots.Where(b => ((b._type.Id == 145) || (b._type.Id == 152)) && b._team == _botTeam).Count();
                     int playercount = _team.ActivePlayerCount;
                     int max = (int)(playercount * 0.50);
 
@@ -213,8 +214,17 @@ namespace InfServer.Script.GameType_Multi
                         heavy.init();
 
                         if (hpMultiplier != 0.0)
-                            heavy._state.health = Convert.ToInt16(heavy._type.Hitpoints + (heavy._type.Hitpoints * hpMultiplier));
-
+                        {
+                            if (_team.ActivePlayerCount <= 1)
+                            {
+                                heavy._state.health = Convert.ToInt16(heavy._type.Hitpoints);
+                            }
+                            else
+                            {
+                                heavy._state.health = Convert.ToInt16(heavy._type.Hitpoints + (heavy._type.Hitpoints * (_team.ActivePlayerCount * hpMultiplier)));
+                            }
+                           
+                        }
                         heavy.Destroyed += delegate (Vehicle bot)
                         {
                             _bots.Remove((Bot)bot);
@@ -245,8 +255,17 @@ namespace InfServer.Script.GameType_Multi
                         elitemarine.init();
 
                         if (hpMultiplier != 0.0)
-                            elitemarine._state.health = Convert.ToInt16(elitemarine._type.Hitpoints + (elitemarine._type.Hitpoints * hpMultiplier));
+                        {
+                            if (_team.ActivePlayerCount <= 1)
+                            {
+                                elitemarine._state.health = Convert.ToInt16(elitemarine._type.Hitpoints);
+                            }
+                            else
+                            {
+                                elitemarine._state.health = Convert.ToInt16(elitemarine._type.Hitpoints + (elitemarine._type.Hitpoints * (_team.ActivePlayerCount * hpMultiplier)));
+                            }
 
+                        }
                         elitemarine.Destroyed += delegate (Vehicle bot)
                         {
                             _bots.Remove((Bot)bot);
@@ -267,6 +286,13 @@ namespace InfServer.Script.GameType_Multi
                         if (team._name == "Titan Militia")
                             vehid = 133;
 
+                        //Let's do 10% of marine being a Veteran Marine (more HP, diff visual look). Difficulty will up the % later.
+                        Random randVetMarine = new Random(); 
+                        bool bVetMarine = (randVetMarine.Next(0, 10) <= _botDifficulty);
+
+                        if (bVetMarine)
+                            vehid = 151;
+
                         Marine marine = _arena.newBot(typeof(Marine), vehid, team, null, state, null) as Marine;
 
                         if (marine == null)
@@ -276,8 +302,8 @@ namespace InfServer.Script.GameType_Multi
                         marine.type = BotType.Marine;
                         marine.init();
 
-                        if (hpMultiplier != 0.0)
-                            marine._state.health = Convert.ToInt16(marine._type.Hitpoints + (marine._type.Hitpoints * hpMultiplier));
+                       // if (hpMultiplier != 0.0)
+                        //    marine._state.health = Convert.ToInt16(marine._type.Hitpoints + (marine._type.Hitpoints * hpMultiplier));
 
                         marine.Destroyed += delegate (Vehicle bot)
                         {
@@ -299,6 +325,13 @@ namespace InfServer.Script.GameType_Multi
                         if (team._name == "Titan Militia")
                             vehid = 133;
 
+                        //Let's do 10% of marine being a Veteran Marine (more HP, diff visual look). Difficulty will up the % later.
+                        Random randVetRipper = new Random();
+                        bool bVetRipper = (randVetRipper.Next(0, 10) <= _botDifficulty);
+
+                        if (bVetRipper)
+                            vehid = 152;
+
                         Ripper ripper = _arena.newBot(typeof(Ripper), vehid, team, null, state, null) as Ripper;
 
                         if (ripper == null)
@@ -308,8 +341,8 @@ namespace InfServer.Script.GameType_Multi
                         ripper.type = BotType.Ripper;
                         ripper.init();
 
-                        if (hpMultiplier != 0.0)
-                            ripper._state.health = Convert.ToInt16(ripper._type.Hitpoints + (ripper._type.Hitpoints * hpMultiplier));
+                        //if (hpMultiplier != 0.0)
+                        //    ripper._state.health = Convert.ToInt16(ripper._type.Hitpoints + (ripper._type.Hitpoints * hpMultiplier));
 
                         ripper.Destroyed += delegate (Vehicle bot)
                         {
@@ -340,8 +373,19 @@ namespace InfServer.Script.GameType_Multi
                         exo.type = BotType.ExoLight;
                         exo.init();
 
+                        
                         if (hpMultiplier != 0.0)
-                            exo._state.health = Convert.ToInt16(exo._type.Hitpoints + (exo._type.Hitpoints * hpMultiplier));
+                        {
+                            if (_team.ActivePlayerCount <= 1)
+                            {
+                                exo._state.health = Convert.ToInt16(exo._type.Hitpoints);
+                            }
+                            else
+                            {
+                                exo._state.health = Convert.ToInt16(exo._type.Hitpoints + (exo._type.Hitpoints * (_team.ActivePlayerCount * hpMultiplier)));
+                            }
+
+                        }
 
                         exo.Destroyed += delegate (Vehicle bot)
                         {
@@ -373,7 +417,17 @@ namespace InfServer.Script.GameType_Multi
                         exo.init();
 
                         if (hpMultiplier != 0.0)
-                            exo._state.health = Convert.ToInt16(exo._type.Hitpoints + (exo._type.Hitpoints * hpMultiplier));
+                        {
+                            if (_team.ActivePlayerCount <= 1)
+                            {
+                                exo._state.health = Convert.ToInt16(exo._type.Hitpoints);
+                            }
+                            else
+                            {
+                                exo._state.health = Convert.ToInt16(exo._type.Hitpoints + (exo._type.Hitpoints * (_team.ActivePlayerCount * hpMultiplier)));
+                            }
+
+                        }
 
                         exo.Destroyed += delegate (Vehicle bot)
                         {
