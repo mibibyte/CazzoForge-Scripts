@@ -166,48 +166,29 @@ namespace InfServer.Script.GameType_Multi
             int killerExp = 0;
             int killerPoints = 0;
             int killerBounty = 0;
-            int victimBounty = 0;
-            int killerBountyIncrease = 0;
 
             BotSettings settings = victim.Settings();
             if (settings != null)
             {
-                /*
                 killerCash = settings.Cash;
                 killerBounty = settings.Bounty;
                 killerExp = settings.Experience;
                 killerPoints = settings.Points;
-                */
-                killerBounty = Convert.ToInt32(((double)killer.Bounty / 100) * Settings.c_percentOfOwn); //We are now using base reward of 25 + 3% of current bounty
-                killerPoints = Convert.ToInt32((settings.Points) + (killerBounty * Settings.c_pointMultiplier));
-                killerCash = Convert.ToInt32((settings.Cash) + (killerBounty * Settings.c_cashMultiplier));
-                killerExp = Convert.ToInt32((settings.Experience) + (killerBounty * Settings.c_expMultiplier));
-                victimBounty = settings.Bounty;
-                killerBountyIncrease = 0;
-
             }
             else
             {
-                /* Old fixed Bot Rewards from CFG
                 killerCash = (int)cfg.bot.cashKillReward;
                 killerExp = (int)cfg.bot.expKillReward;
                 killerPoints = (int)cfg.bot.pointsKillReward;
                 killerBounty = (int)cfg.bot.fixedBountyToKiller;
-                */
-                killerBounty = Convert.ToInt32(((double)killer.Bounty / 100) * Settings.c_percentOfOwn); //We are now using base reward of 25 + 3% of current bounty
-                killerPoints = Convert.ToInt32(((int)cfg.bot.pointsKillReward) + (killerBounty * Settings.c_pointMultiplier));
-                killerCash = Convert.ToInt32(((int)cfg.bot.cashKillReward) + (killerBounty * Settings.c_cashMultiplier));
-                killerExp = Convert.ToInt32(((int)cfg.bot.expKillReward) + (killerBounty * Settings.c_expMultiplier));
-                victimBounty = (int)cfg.bot.fixedBountyToKiller;
-                killerBountyIncrease = 0;
             }
 
             //Update his stats
             addCash(killer, killerCash);
             killer.Experience += killerExp;
             killer.KillPoints += killerPoints;
-            //killer.Bounty += killerBounty;
-            killer.Bounty += (killerBountyIncrease + victimBounty);
+            killer.Bounty += killerBounty;
+
 
             //Inform the killer..
             killer.triggerMessage(1, 500,

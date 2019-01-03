@@ -132,11 +132,6 @@ namespace InfServer.Script.GameType_Multi
 
             }
 
-            if (bMinor)
-            {
-                if (isHappyHour())
-            }
-
 
             if (playing < _minPlayers && _arena._bIsPublic)
             {

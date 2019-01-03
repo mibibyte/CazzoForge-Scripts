@@ -8,10 +8,6 @@ namespace InfServer.Script.GameType_Multi
     public abstract class Settings
     {
 
-        //Event variables
-        public TimeSpan hhStart = new TimeSpan(22, 0, 0);
-        public TimeSpan hhEnd = new TimeSpan(22, 0, 0);
-
         //KillRewards
         public const int c_baseReward = 25;
         public const double c_pointMultiplier = 2;
@@ -26,12 +22,12 @@ namespace InfServer.Script.GameType_Multi
 
         //Jackpot Conquest
         public const int c_jackpot_CQ_Fixed = 4000;
-        public const int c_jackpot_CQ_PointsPerKill = 20;
-        public const int c_jackpot_CQ_PointsPerDeath = 3;
-        public const int c_jackpot_CQ_PointsPerFlag = 5;
-        public const double c_jackpot_CQ_PointsPerHP = 0.035;
-        public const double c_jackpot_CQ_WinnerPointsPerSecond = 0.2;
-        public const double c_jackpot_CQ_LoserPointsPerSecond = 0.1;
+        public const int c_jackpot_CQ_PointsPerKill = 80;
+        public const int c_jackpot_CQ_PointsPerDeath = 12;
+        public const int c_jackpot_CQ_PointsPerFlag = 20;
+        public const double c_jackpot_CQ_PointsPerHP = 0.14;
+        public const double c_jackpot_CQ_WinnerPointsPerSecond = 1.5;
+        public const double c_jackpot_CQ_LoserPointsPerSecond = 0.75;
 
         //Jackpot CO-OP
         public const int c_jackpot_Co_Fixed = 8000;
