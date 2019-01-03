@@ -47,7 +47,6 @@ namespace InfServer.Script.GameType_Multi
         private bool _bMiniMapsEnabled;
         public Team _winner;
         private Player lastKiller;
-
         public List<SupplyDrop> _supplyDrops;
         private List<Player> _fakePlayers;
 
@@ -94,7 +93,11 @@ namespace InfServer.Script.GameType_Multi
             _isEarlyAccess = false;
 
             if (_arena._name.StartsWith("[Co-Op]"))
+            {
                 _gameType = Settings.GameTypes.Coop;
+            }
+                
+            
             else
             {
                 Team team1 = _arena.getTeamByName("Titan Militia");
