@@ -34,6 +34,7 @@ namespace InfServer.Script.GameType_Multi
         private int _flagsCaptured;
         private int _totalFlags;
 
+        public int _botDifficulty;   // 1-10 are valid entries, controls percentage of veteran spawns.
 
         #region Stat Recording
         private List<Team> activeTeams = null;
@@ -56,7 +57,26 @@ namespace InfServer.Script.GameType_Multi
 
             _team = _arena.getTeamByName("Titan Militia");
             _botTeam = _arena.getTeamByName("Collective Military");
-            
+
+            if (_arena._name.StartsWith("[Co-Op]"))
+            {   
+                _botDifficulty = 1;
+
+                if (_arena._name.EndsWith("Hard"))
+                {
+                    _botDifficulty = 3;
+                }
+                else if (_arena._name.EndsWith("Expert"))
+                {
+                    _botDifficulty = 6;
+                }
+                else if (_arena._name.EndsWith("Insane"))
+                {
+                    _botDifficulty = 10;
+                }
+            }
+
+
         }
 
         public void Poll(int now)
@@ -124,16 +144,26 @@ namespace InfServer.Script.GameType_Multi
             _thirdRushWave = false;
             _firstBoss = false;
             _secondBoss = false;
+
+            _firstLightExoWave = false;
+            _secondLightExoWave = false;
+            _thirdLightExoWave = false;
+
+            _firstHeavyExoWave = false;
+            _secondHeavyExoWave = false;
+            _thirdHeavyExoWave = false;
+
             _lastSupplyDrop = Environment.TickCount;
             _lastHPChange = Environment.TickCount;
-            hpMultiplier = 0.0;
+            hpMultiplier = 0.25;
 
             _flags = _arena._flags.Values.OrderBy(f => f.posX).ToList();
             _allPoints = new List<CapturePoint>();
             _baseScript._lastSpawn = new Dictionary<string, Helpers.ObjectState>();
 
             _totalFlags = _flags.Count;
-
+             //should be redundant , remove later
+             _bots = new List<Bot>();
 
 
             int flagcount = 1;

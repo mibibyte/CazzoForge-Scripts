@@ -26,12 +26,18 @@ namespace InfServer.Script.GameType_Multi
 
         public void spawnEliteHeavy(Team team)
         {
-            Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(_team, true);
+            Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(_botTeam, true);
             Helpers.ObjectState openPoint = new Helpers.ObjectState();
 
+            /*
             Random rand = new Random();
+            warpPoint = _baseScript.findFlagWarp(_botTeam, false);
             short randomoffset = (short)(warpPoint.positionX + rand.Next(0, 800));
             openPoint = _baseScript.findOpenWarp(_botTeam, _arena, randomoffset, warpPoint.positionY, 1200);
+            */
+
+            warpPoint = _baseScript.findFlagWarp(_botTeam, false);
+            openPoint = _baseScript.findOpenWarp(_botTeam, _arena, warpPoint.positionX, warpPoint.positionY, 200);
 
             if (!newBot(team, BotType.EliteHeavy, null, null, openPoint))
                 Log.write(TLog.Warning, "Unable to spawn bot");
@@ -51,13 +57,18 @@ namespace InfServer.Script.GameType_Multi
 
         public void spawnEliteMarine(Team team)
         {
-            Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(_team, true);
+            Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(_botTeam, true);
             Helpers.ObjectState openPoint = new Helpers.ObjectState();
 
+            /*
             Random rand = new Random();
-
+            warpPoint = _baseScript.findFlagWarp(_botTeam, false);
             short randomoffset = (short)(warpPoint.positionX + rand.Next(0, 800));
             openPoint = _baseScript.findOpenWarp(_botTeam, _arena, randomoffset, warpPoint.positionY, 1200);
+            */
+
+            warpPoint = _baseScript.findFlagWarp(_botTeam, false);
+            openPoint = _baseScript.findOpenWarp(_botTeam, _arena, warpPoint.positionX, warpPoint.positionY, 200);
 
             if (!newBot(team, BotType.EliteMarine, null, null, openPoint))
                 Log.write(TLog.Warning, "Unable to spawn bot");
@@ -82,6 +93,8 @@ namespace InfServer.Script.GameType_Multi
             Helpers.ObjectState openPoint = new Helpers.ObjectState();
 
             Random rand = new Random();
+
+            
 
             for (int i = 0; i < count; i++)
             {
@@ -182,27 +195,46 @@ namespace InfServer.Script.GameType_Multi
 
         public void spawnExoLight(Team team)
         {
+
+            Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(_botTeam, true);
+            Helpers.ObjectState openPoint = new Helpers.ObjectState();
+
+            /*
             Random rand = new Random();
+            warpPoint = _baseScript.findFlagWarp(_botTeam, false);
+            short randomoffset = (short)(warpPoint.positionX + rand.Next(0, 800));
+            openPoint = _baseScript.findOpenWarp(_botTeam, _arena, randomoffset, warpPoint.positionY, 1200);
+            */
 
-            Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(team, true);
-
-            short randomoffset = (short)(warpPoint.positionX - rand.Next(0, 600));
-            warpPoint.positionX = randomoffset;
-
-            if (!newBot(team, BotType.ExoLight, null, null, warpPoint))
+            warpPoint = _baseScript.findFlagWarp(_botTeam, false);
+            openPoint = _baseScript.findOpenWarp(_botTeam, _arena, warpPoint.positionX, warpPoint.positionY, 400);
+            
+            /*
+            Random rand = new Random();
+            warpPoint = _baseScript.findFlagWarp(_botTeam, false);
+            short randomoffsetX = (short)(warpPoint.positionX + rand.Next(0, 100));
+            short randomoffsetY = (short)(warpPoint.positionX + rand.Next(0, 100));
+            openPoint = _baseScript.findOpenWarp(_botTeam, _arena, randomoffsetX, randomoffsetY, 200);
+            */
+            if (!newBot(team, BotType.ExoLight, null, null, openPoint))
                 Log.write(TLog.Warning, "Unable to spawn bot");
         }
 
         public void spawnExoHeavy(Team team)
         {
+            Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(_botTeam, true);
+            Helpers.ObjectState openPoint = new Helpers.ObjectState();
+            /*
             Random rand = new Random();
+            warpPoint = _baseScript.findFlagWarp(_botTeam, false);
+            short randomoffset = (short)(warpPoint.positionX + rand.Next(0, 800));
+            openPoint = _baseScript.findOpenWarp(_botTeam, _arena, randomoffset, warpPoint.positionY, 1200);
+            */
 
-            Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(team, true);
+            warpPoint = _baseScript.findFlagWarp(_botTeam, false);
+            openPoint = _baseScript.findOpenWarp(_botTeam, _arena, warpPoint.positionX, warpPoint.positionY, 400);
 
-            short randomoffset = (short)(warpPoint.positionX - rand.Next(0, 600));
-            warpPoint.positionX = randomoffset;
-
-            if (!newBot(team, BotType.ExoHeavy, null, null, warpPoint))
+            if (!newBot(team, BotType.ExoHeavy, null, null, openPoint))
                 Log.write(TLog.Warning, "Unable to spawn bot");
         }
 
@@ -210,20 +242,61 @@ namespace InfServer.Script.GameType_Multi
         {
             switch (flagcount)
             {
-                case 10:
+                case 3:
                     {
-                        if (!_firstRushWave)
+                        if (!_firstLightExoWave)
                         {
-                            _firstRushWave = true;
+                            _firstLightExoWave = true;
 
-                            _arena.sendArenaMessage("!The enemy has sent extra reinforcements in a last ditch attempt to stop you!", 4);
-                            int playercount = _team.ActivePlayerCount;
-                            int max = playercount * 1;
-                            spawnRandomWave(_botTeam, max);
+                            _arena.sendArenaMessage("!The enemy has sent a Light ExoSuit to stop you!", 4);                        
+                            spawnExoLight(_botTeam);
                             spawnExoLight(_botTeam);
                         }
                     }
                     break;
+
+                case 6:
+                    {
+                        if (!_secondLightExoWave)
+                        {
+                            _secondLightExoWave = true;
+
+                            _arena.sendArenaMessage("!The enemy has sent a Light ExoSuit to stop you!", 4);
+                            spawnExoLight(_botTeam);
+                            
+                        }
+                    }
+                    break;
+
+                case 9:
+                    {
+                        if (!_firstRushWave) // problems with spawns
+                        {
+                            _firstRushWave = true;
+
+                            _arena.sendArenaMessage("!The enemy has sent extra reinforcements in a last ditch attempt to stop you!", 4);
+                            spawnExoLight(_botTeam);
+                            spawnEliteHeavy(_botTeam);
+                            int playercount = _team.ActivePlayerCount;
+                            int max = playercount * 1;                   
+                            spawnRandomWave(_botTeam, max);
+                            
+                        }
+                    }
+                    break;
+
+                case 13:
+                    {
+                        if (!_firstHeavyExoWave)
+                        {
+                            _firstHeavyExoWave = true;
+
+                            _arena.sendArenaMessage("!The enemy has sent a Heavy ExoSuit to stop you!", 4);
+                            spawnExoHeavy(_botTeam);
+                        }
+                    }
+                    break;
+
                 case 19:
                     {
                         if (!_firstBoss)
@@ -233,28 +306,58 @@ namespace InfServer.Script.GameType_Multi
                             _arena.sendArenaMessage("!The enemy has sent some enhanced Soldiers, Look out!", 4);
                             spawnEliteHeavy(_botTeam);
                             spawnEliteMarine(_botTeam);
+                            spawnExoHeavy(_botTeam);
                             int playercount = _team.ActivePlayerCount;
                             int max = Convert.ToInt32(playercount * 1.25);
                             spawnRandomWave(_botTeam, max);
+                            
+                        }
+                    }
+                    break;
+
+                case 21:
+                    {
+                        if (!_secondHeavyExoWave)
+                        {
+                            _secondHeavyExoWave = true;
+
+                            _arena.sendArenaMessage("!The enemy has sent a Heavy ExoSuit to stop you!", 4);
                             spawnExoHeavy(_botTeam);
                         }
                     }
                     break;
-                case 27:
+
+                case 24:
+                    {
+                        if (!_thirdLightExoWave)
+                        {
+                            _thirdLightExoWave = true;
+
+                            _arena.sendArenaMessage("!The enemy has sent a Light ExoSuit to stop you!", 4);
+                            spawnExoLight(_botTeam);
+                           
+
+                        }
+                    }
+                    break;
+
+                case 26:
                     {
                         if (!_secondRushWave)
                         {
                             _secondRushWave = true;
 
                             _arena.sendArenaMessage("!The enemy has sent extra reinforcements in a last ditch attempt to stop you!", 4);
+                            spawnEliteMarine(_botTeam);
                             int playercount = _team.ActivePlayerCount;
                             int max = Convert.ToInt32(playercount * 1.50);
                             spawnRandomWave(_botTeam, max);
-                            spawnEliteMarine(_botTeam);
+                            
                         }
                     }
-                    break;
-                case 32:
+                    break;     
+
+                case 33:
                     {
                         if (!_secondBoss)
                         {
@@ -263,25 +366,40 @@ namespace InfServer.Script.GameType_Multi
                             _arena.sendArenaMessage("!The enemy has sent some enhanced Soldiers, Look out!", 4);
                             spawnEliteHeavy(_botTeam);
                             spawnEliteMarine(_botTeam);
+                            spawnExoLight(_botTeam);
                             int playercount = _team.ActivePlayerCount;
                             int max = Convert.ToInt32(playercount * 1.75);
                             spawnRandomWave(_botTeam, max);
-                            spawnExoLight(_botTeam);
+                            
                         }
                     }
                     break;
-                case 35:
+
+                case 34:
                     {
                         if (!_thirdRushWave)
                         {
                             _thirdRushWave = true;
 
                             _arena.sendArenaMessage("!The enemy has sent extra reinforcements in a last ditch attempt to stop you!", 4);
+                            spawnEliteHeavy(_botTeam);
+                            spawnEliteMarine(_botTeam);
+                            spawnExoHeavy(_botTeam);
                             int playercount = _team.ActivePlayerCount;
                             int max = Convert.ToInt32(playercount * 3);
                             spawnRandomWave(_botTeam, max);
-                            spawnEliteHeavy(_botTeam);
-                            spawnEliteMarine(_botTeam);
+                            
+                        }
+                    }
+                    break;
+
+                case 36:
+                    {
+                        if (!_thirdHeavyExoWave)
+                        {
+                            _thirdHeavyExoWave = true;
+
+                            _arena.sendArenaMessage("!The enemy has sent a Heavy ExoSuit to stop you!", 4);
                             spawnExoHeavy(_botTeam);
                         }
                     }
