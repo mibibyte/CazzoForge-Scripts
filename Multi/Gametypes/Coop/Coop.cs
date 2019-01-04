@@ -144,6 +144,15 @@ namespace InfServer.Script.GameType_Multi
             _thirdRushWave = false;
             _firstBoss = false;
             _secondBoss = false;
+
+            _firstLightExoWave = false;
+            _secondLightExoWave = false;
+            _thirdLightExoWave = false;
+
+            _firstHeavyExoWave = false;
+            _secondHeavyExoWave = false;
+            _thirdHeavyExoWave = false;
+
             _lastSupplyDrop = Environment.TickCount;
             _lastHPChange = Environment.TickCount;
             hpMultiplier = 0.25;
@@ -153,7 +162,8 @@ namespace InfServer.Script.GameType_Multi
             _baseScript._lastSpawn = new Dictionary<string, Helpers.ObjectState>();
 
             _totalFlags = _flags.Count;
-
+             //should be redundant , remove later
+             _bots = new List<Bot>();
 
 
             int flagcount = 1;

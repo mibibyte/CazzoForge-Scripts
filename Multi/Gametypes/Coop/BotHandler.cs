@@ -22,14 +22,16 @@ namespace InfServer.Script.GameType_Multi
 
         public void pollBots(int now)
         {
-          /*  if (spawnBots && _arena._bGameRunning && now - _lastHPChange >= 120000)  
-            {
-                _lastHPChange = now;
-                hpMultiplier = hpMultiplier + 0.07;
+            /*  if (spawnBots && _arena._bGameRunning && now - _lastHPChange >= 120000)  
+              {
+                  _lastHPChange = now;
+                  hpMultiplier = hpMultiplier + 0.07;
 
-                _arena.sendArenaMessage("$The enemy is starting to increase their armor, Stay sharp!", 5);
-            } */
-            
+                  _arena.sendArenaMessage("$The enemy is starting to increase their armor, Stay sharp!", 5);
+              } */
+
+            if (_bots == null)
+                _bots = new List<Bot>();
 
             if (_bots.Count >= _botMax)
             {

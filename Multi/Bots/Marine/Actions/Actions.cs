@@ -156,11 +156,13 @@ namespace InfServer.Script.GameType_Multi
                                {   //Is the path too long?
                                    if (pathLength > c_MaxPath)
                                    {   //Destroy ourself and let another zombie take our place
-                                       _path = null;
-                                       destroy(true);
+                                       //_path = null; Destroying Disasbled for now, may replace with a distance from enemy check
+                                       //destroy(true);
+                                       _path = path;
+                                       _pathTarget = 1;
                                    }
                                    else
-                                   {
+                                   { 
                                        _path = path;
                                        _pathTarget = 1;
                                    }
@@ -242,8 +244,10 @@ namespace InfServer.Script.GameType_Multi
                                {   //Is the path too long?
                                    if (pathLength > c_MaxPath)
                                    {   //Destroy ourself and let another zombie take our place
-                                       _path = null;
-                                       destroy(true);
+                                       //_path = null; Destroying Disasbled for now, may replace with a distance from enemy check
+                                       //destroy(true);
+                                       _path = path;
+                                       _pathTarget = 1;
                                    }
                                    else
                                    {
