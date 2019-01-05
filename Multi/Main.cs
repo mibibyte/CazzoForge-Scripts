@@ -1116,6 +1116,17 @@ namespace InfServer.Script.GameType_Multi
             {
             }
             //Defer to our current gametype handler!
+
+            if ((skill.SkillId >= 0) && (skill.SkillId < 100)) // they trying to pick  class
+            {
+                for (int i = 0; i < 100; i++) // we gotta remove any class skills that already got
+                {
+                    if (from.findSkill(i) != null)
+                        from._skills.Remove(i);
+                }
+            }
+
+
             switch (_gameType)
             {
                 case Settings.GameTypes.Conquest:

@@ -35,6 +35,7 @@ namespace InfServer.Script.GameType_Multi
         private int _totalFlags;
 
         public int _botDifficulty;   // 1-10 are valid entries, controls percentage of veteran spawns.
+        public int _botDifficultyPlayerModifier;   // Used to increase difficulty of arena when over 6 players.
 
         #region Stat Recording
         private List<Team> activeTeams = null;
@@ -61,6 +62,15 @@ namespace InfServer.Script.GameType_Multi
             if (_arena._name.StartsWith("[Co-Op]"))
             {   
                 _botDifficulty = 1;
+                if (_arena._name.EndsWith("Easy"))
+                {
+                    _botDifficulty = 0;
+                }
+
+                if (_arena._name.EndsWith("Normal"))
+                {
+                    _botDifficulty = 1;
+                }
 
                 if (_arena._name.EndsWith("Hard"))
                 {
