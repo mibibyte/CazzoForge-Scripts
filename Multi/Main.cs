@@ -125,13 +125,6 @@ namespace InfServer.Script.GameType_Multi
             _lastGameCheck = now;
             bool bMinor = (now - _tickLastMinorPoll) >= 1000;
 
-
-            if (bMinor)
-            {
-                //Poll events
-                pollEvents(now);
-            }
-
             //Do we have enough players?
             int playing = _arena.PlayerCount;
             if (_arena._bGameRunning && playing < _minPlayers && _arena._bIsPublic)
@@ -434,6 +427,25 @@ namespace InfServer.Script.GameType_Multi
             if (StatsCurrent(player) == null)
                 createPlayerStats(player);
 
+            //Hide any private loot items
+            foreach (Arena.ItemDrop item in _privateLoot.Values)
+            {
+                Arena.ItemDrop spoofed = new Arena.ItemDrop();
+
+                spoofed.item = item.item;
+                spoofed.id = item.id;
+                spoofed.quantity = (short)item.quantity;
+                spoofed.positionX = 2304;
+                spoofed.positionY = 4880;
+                spoofed.relativeID = item.relativeID;
+                spoofed.freq = item.freq;
+
+                spoofed.owner = item.owner; //For bounty abuse upon pickup
+
+
+                Helpers.Object_ItemDrop(player, spoofed);
+            }
+
             //Defer to our current gametype handler!
             switch (_gameType)
             {
@@ -617,7 +629,7 @@ namespace InfServer.Script.GameType_Multi
                 if (reward.player == null) continue;
                 reward.player.sendMessage(0, String.Format("Your personal Jackpot: (MVP={0}% Rank={1} Score={2}) Rewards: (Cash={3} Experience={4} Points={5})",
                 Math.Round(reward.MVP * 100, 2), idx, reward.Score, reward.cash, reward.experience, reward.points));
-                Rewards.addCash(reward.player, reward.cash, _gameType);
+                Rewards.addCash(reward.player, reward.cash);
                 reward.player.Experience += reward.experience;
                 reward.player.BonusPoints += reward.points;
                 idx++;
@@ -665,20 +677,6 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.ItemPickup")]
         public bool playerItemPickup(Player player, Arena.ItemDrop drop, ushort quantity)
         {
-
-            //Private loot?
-            if (_privateLoot.ContainsKey(drop.id))
-            {
-                if (drop.owner != player)
-                {
-                    player.sendMessage(-1, "You can't pick up another players loot unless it was dropped by a player");
-                    return false;
-                }
-                else
-                    _privateLoot.Remove(drop.id);
-            }
-
-
             if (quantity == drop.quantity)
             {   //Delete the drop
                 drop.quantity = 0;
@@ -943,7 +941,7 @@ namespace InfServer.Script.GameType_Multi
             {
                 Logic_Assets.RunEvent(victim, _arena._server._zoneConfig.EventInfo.killedEnemy);
                 //Calculate rewards
-                Rewards.calculatePlayerKillRewards(victim, killer, _gameType);
+                Rewards.calculatePlayerKillRewards(victim, killer);
             }
 
             //Update stats
@@ -1035,7 +1033,7 @@ namespace InfServer.Script.GameType_Multi
                 Helpers.Vehicle_RouteDeath(_arena.Players, killer, dead, null);
                 if (killer != null && dead._team != killer._team)
                 {//Don't allow rewards for team kills
-                    Rewards.calculateBotKillRewards(dead, killer, _gameType);
+                    Rewards.calculateBotKillRewards(dead, killer);
                 }
 
                 killer.Kills++;
@@ -1087,7 +1085,7 @@ namespace InfServer.Script.GameType_Multi
             {
                 string upgradeItem = item.name.Split(':')[1].TrimStart();
 
-                if (patron._inventory.Values.Count(itm => itm.item.name.Contains(upgradeItem)) == 0)
+                if (patron._inventory.Values.Count(itm => ((itm.item.name.Contains(upgradeItem)) && (itm.item.name.Length <= (upgradeItem.Length + 4)))) == 0)
                 {
                     patron.sendMessage(-1, "You're not allowed to upgrade items you don't own");
                     return false;

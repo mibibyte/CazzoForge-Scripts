@@ -41,6 +41,12 @@ namespace InfServer.Script.GameType_Multi
         private bool _secondHeavyExoWave;
         private bool _thirdHeavyExoWave;
 
+        private bool _firstDifficultyWave;
+        private bool _secondDifficultyWave;
+        private bool _thirdDifficultyWave;
+        private bool _fourthDifficultyWave;
+        private bool _fifthDifficultyWave;
+
         private bool _firstBoss;
         private bool _secondBoss;
         public bool _dropSupplies;

@@ -71,7 +71,7 @@ namespace InfServer.Script.GameType_Multi
                 //Does bot team need a marine?
                 if (now - _lastMarineWave > _marineSpawnDelay)
                 {
-                    int botcount = _bots.Where(b => ((b._type.Id == 131) || (b._type.Id == 151)) && b._team == _botTeam).Count();
+                    int botcount = _bots.Where(b => ((b._type.Id == 131) || (b._type.Id == 151) || (b._type.Id == 154)) && b._team == _botTeam).Count();
                     int playercount = _team.ActivePlayerCount;
                     int max = Convert.ToInt32(playercount * 1);
 
@@ -86,7 +86,7 @@ namespace InfServer.Script.GameType_Multi
                 //Does bot team need a ripper?
                 if (now - _lastRipperWave > _ripperSpawnDelay)
                 {
-                    int botcount = _bots.Where(b => ((b._type.Id == 145) || (b._type.Id == 152)) && b._team == _botTeam).Count();
+                    int botcount = _bots.Where(b => ((b._type.Id == 145) || (b._type.Id == 152) || (b._type.Id == 153)) && b._team == _botTeam).Count();
                     int playercount = _team.ActivePlayerCount;
                     int max = (int)(playercount * 0.50);
 
@@ -305,13 +305,32 @@ namespace InfServer.Script.GameType_Multi
                             _botDifficultyPlayerModifier = 0;
                         }
 
+                        if ((_botDifficulty + _botDifficultyPlayerModifier) > 10) // If difficulty goes to 11 or beyond we spawn all Adept Marines with increasing chance of Veteran Marines
+                        {
+                            vehid = 151;
+                            Random randVetMarine = new Random();
+                            bool bVetMarine = (randVetMarine.Next(11, 20) <= (_botDifficulty + _botDifficultyPlayerModifier));
+
+                            if (bVetMarine)
+                                vehid = 154;
+                        }
+                        else //If difficulty is 1-10 we spawn normal marines with an increasing chance of adept marines.
+                        {
+
+                            Random randAdeptMarine = new Random();
+                            bool bAdeptMarine = (randAdeptMarine.Next(1, 10) <= (_botDifficulty + _botDifficultyPlayerModifier));
+
+                            if (bAdeptMarine)
+                                vehid = 151;
+                        }
+
                         //Let's do 10% of marine being a Veteran Marine (more HP, diff visual look). Difficulty will up the % later.
-                        Random randVetMarine = new Random(); 
+                        /*Random randVetMarine = new Random(); 
                         bool bVetMarine = (randVetMarine.Next(1, 10) <= (_botDifficulty + _botDifficultyPlayerModifier));
 
                         if (bVetMarine)
                             vehid = 151;
-
+                            */
                         Marine marine = _arena.newBot(typeof(Marine), vehid, team, null, state, null) as Marine;
 
                         if (marine == null)
@@ -337,7 +356,7 @@ namespace InfServer.Script.GameType_Multi
                 #region Ripper
                 case BotType.Ripper:
                     {
-                        //Collective vehicle
+                        //Collective vehicle normal Marine
                         ushort vehid = 145;
 
                         //Titan vehicle?
@@ -354,12 +373,24 @@ namespace InfServer.Script.GameType_Multi
                             _botDifficultyPlayerModifier = 0;
                         }
 
-                        //Let's do 10% of marine being a Veteran Marine (more HP, diff visual look). Difficulty will up the % later.
-                        Random randVetRipper = new Random();
-                        bool bVetRipper = (randVetRipper.Next(1, 10) <= (_botDifficulty + _botDifficultyPlayerModifier));
+                        if ((_botDifficulty + _botDifficultyPlayerModifier) > 10) // If difficulty goes to 11 or beyond we spawn all Adept Marines with increasing chance of Veteran Marines
+                        {
+                            vehid = 152; 
+                            Random randVetRipper = new Random();
+                            bool bVetRipper = (randVetRipper.Next(11, 20) <= (_botDifficulty + _botDifficultyPlayerModifier));
 
-                        if (bVetRipper)
-                            vehid = 152;
+                            if (bVetRipper)
+                                vehid = 153;
+                        }
+                        else //If difficulty is 1-10 we spawn normal marines with an increasing chance of adept marines.
+                        {
+                            
+                            Random randAdeptRipper = new Random();
+                            bool bAdeptRipper = (randAdeptRipper.Next(1, 10) <= (_botDifficulty + _botDifficultyPlayerModifier));
+
+                            if (bAdeptRipper)
+                                vehid = 152;
+                        }
 
                         Ripper ripper = _arena.newBot(typeof(Ripper), vehid, team, null, state, null) as Ripper;
 
