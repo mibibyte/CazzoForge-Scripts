@@ -159,7 +159,7 @@ namespace InfServer.Script.GameType_Multi
         /// <summary>
         /// Calculates and rewards a players for a bot kill
         /// </summary>
-        static public void calculateBotKillRewards(Bots.Bot victim, Player killer)
+        static public void calculateBotKillRewards(Bots.Bot victim, Player killer, Settings.GameTypes gameType)
         {
             CfgInfo cfg = killer._server._zoneConfig;
             int killerCash = 0;
@@ -203,7 +203,7 @@ namespace InfServer.Script.GameType_Multi
             }
 
             //Update his stats
-            addCash(killer, killerCash);
+            addCash(killer, killerCash, gameType);
             killer.Experience += killerExp;
             killer.KillPoints += killerPoints;
             //killer.Bounty += killerBounty;
@@ -246,7 +246,7 @@ namespace InfServer.Script.GameType_Multi
                     String.Format("{0} killed by {1} (Cash={2} Exp={3} Points={4})",
                     victim._type.Name, killer._alias, cashRewards[p._id],
                     expRewards[p._id], pointRewards[p._id]));
-                addCash(p, cashRewards[p._id]);
+                addCash(p, cashRewards[p._id], gameType);
                 p.Experience += expRewards[p._id];
                 p.AssistPoints += pointRewards[p._id];
 
@@ -280,7 +280,7 @@ namespace InfServer.Script.GameType_Multi
             }
         }
 
-        static public void calculatePlayerKillRewards(Player victim, Player killer)
+        static public void calculatePlayerKillRewards(Player victim, Player killer, Settings.GameTypes gameType)
         {
             CfgInfo cfg = victim._server._zoneConfig;
 
@@ -322,7 +322,7 @@ namespace InfServer.Script.GameType_Multi
             Helpers.Player_RouteKill(killer, update, victim, killerCash, killerPoints, killerPoints, killerExp);
 
             //Update some statistics
-            addCash(killer, killerCash);
+            addCash(killer, killerCash, gameType);
             killer.Experience += killerExp;
             killer.KillPoints += killerPoints;
             victim.DeathPoints += killerPoints;
@@ -388,7 +388,7 @@ namespace InfServer.Script.GameType_Multi
                     continue;
 
                 Helpers.Player_RouteKill(p, update, victim, cashRewards[p._id], killerPoints, pointRewards[p._id], expRewards[p._id]);
-                addCash(p, cashRewards[p._id]);
+                addCash(p, cashRewards[p._id], gameType);
                 p.Experience += expRewards[p._id];
                 p.AssistPoints += pointRewards[p._id];
 
@@ -403,7 +403,7 @@ namespace InfServer.Script.GameType_Multi
                 if (!sentTo.Contains(p._id))
                 {
                     Helpers.Player_RouteKill(p, update, victim, cashRewards[p._id], killerPoints, pointRewards[p._id], expRewards[p._id]);
-                    addCash(p, cashRewards[p._id]);
+                    addCash(p, cashRewards[p._id], gameType);
                     p.Experience += expRewards[p._id];
                     p.AssistPoints += pointRewards[p._id];
 
@@ -421,7 +421,7 @@ namespace InfServer.Script.GameType_Multi
                     p.Bounty += BtyShare;
 
                     Helpers.Player_RouteKill(p, update, victim, cashRewards[p._id], killerPoints, pointRewards[p._id], expRewards[p._id]);
-                    addCash(p, cashRewards[p._id]);
+                    addCash(p, cashRewards[p._id], gameType);
                     p.Experience += expRewards[p._id];
                     p.AssistPoints += pointRewards[p._id];
 
@@ -487,18 +487,41 @@ namespace InfServer.Script.GameType_Multi
             }
         }
 
-        static public void addCash(Player player, int quantity)
+        static public void addCash(Player player, int quantity, Settings.GameTypes gameType)
         {
             //Any rare cash item?
             double multiplier = 1.0;
             int additional = 0;
+
+            switch (gameType)
+            {
+                case Settings.GameTypes.Conquest:
+                    {
+                        if (Script_Multi._bPvpHappyHour)
+                        {
+                            multiplier = 2.0;
+                            additional = Convert.ToInt32(quantity * multiplier);
+                        }
+                        break;
+                    }
+                case Settings.GameTypes.Coop:
+                    {
+                        if (Script_Multi._bCoopHappyHour)
+                        {
+                            multiplier = 2.0;
+                            additional = Convert.ToInt32(quantity * multiplier);
+                        }
+                        break;
+                    }
+            }
+
             if (player.getInventoryAmount(2019) > 0)
             { 
-                multiplier = 0.10;
+                multiplier = 1.10;
                 additional = Convert.ToInt32(quantity * multiplier);
             }
 
-            player.Cash += (quantity + additional);
+            player.Cash += additional;
             player.syncState();
         }
     }

@@ -278,7 +278,11 @@ namespace InfServer.Script.GameType_Multi
                             spawnExoLight(_botTeam);
                             spawnEliteHeavy(_botTeam);
                             int playercount = _team.ActivePlayerCount;
-                            int max = playercount * 1;                   
+
+                            if (playercount > 6) //  Hard limit the wave size peaks to 6 players
+                            playercount = 6;
+
+                            int max = playercount * 1;
                             spawnRandomWave(_botTeam, max);
                             
                         }
@@ -308,6 +312,10 @@ namespace InfServer.Script.GameType_Multi
                             spawnEliteMarine(_botTeam);
                             spawnExoHeavy(_botTeam);
                             int playercount = _team.ActivePlayerCount;
+
+                            if (playercount > 6) //  Hard limit the wave size peaks to 6 players
+                                playercount = 6;
+
                             int max = Convert.ToInt32(playercount * 1.25);
                             spawnRandomWave(_botTeam, max);
                             
@@ -350,6 +358,10 @@ namespace InfServer.Script.GameType_Multi
                             _arena.sendArenaMessage("!The enemy has sent extra reinforcements in a last ditch attempt to stop you!", 4);
                             spawnEliteMarine(_botTeam);
                             int playercount = _team.ActivePlayerCount;
+
+                            if (playercount > 6) //  Hard limit the wave size peaks to 6 players
+                                playercount = 6;
+
                             int max = Convert.ToInt32(playercount * 1.50);
                             spawnRandomWave(_botTeam, max);
                             
@@ -368,6 +380,10 @@ namespace InfServer.Script.GameType_Multi
                             spawnEliteMarine(_botTeam);
                             spawnExoLight(_botTeam);
                             int playercount = _team.ActivePlayerCount;
+
+                            if (playercount > 6) //  Hard limit the wave size peaks to 6 players
+                                playercount = 6;
+
                             int max = Convert.ToInt32(playercount * 1.75);
                             spawnRandomWave(_botTeam, max);
                             
@@ -386,6 +402,10 @@ namespace InfServer.Script.GameType_Multi
                             spawnEliteMarine(_botTeam);
                             spawnExoHeavy(_botTeam);
                             int playercount = _team.ActivePlayerCount;
+
+                            if (playercount > 6) //  Hard limit the wave size peaks to 6 players
+                                playercount = 6;
+
                             int max = Convert.ToInt32(playercount * 3);
                             spawnRandomWave(_botTeam, max);
                             

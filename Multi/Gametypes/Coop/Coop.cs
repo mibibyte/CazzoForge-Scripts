@@ -35,6 +35,7 @@ namespace InfServer.Script.GameType_Multi
         private int _totalFlags;
 
         public int _botDifficulty;   // 1-10 are valid entries, controls percentage of veteran spawns.
+        public int _botDifficultyPlayerModifier;   // Used to increase difficulty of arena when over 6 players.
 
         #region Stat Recording
         private List<Team> activeTeams = null;
@@ -61,6 +62,15 @@ namespace InfServer.Script.GameType_Multi
             if (_arena._name.StartsWith("[Co-Op]"))
             {   
                 _botDifficulty = 1;
+                if (_arena._name.EndsWith("Easy"))
+                {
+                    _botDifficulty = 0;
+                }
+
+                if (_arena._name.EndsWith("Normal"))
+                {
+                    _botDifficulty = 1;
+                }
 
                 if (_arena._name.EndsWith("Hard"))
                 {
@@ -321,6 +331,14 @@ namespace InfServer.Script.GameType_Multi
         public void playerEnterArena(Player player)
         {
             player.sendMessage(0, String.Format("Welcome to Cooperative mode, {0}", player._alias));
+
+            if (Script_Multi._bCoopHappyHour)
+                player.sendMessage(0, "&Co-Op Happy hour is currently active, Enjoy!");
+            else
+            {
+                TimeSpan remaining = _baseScript.timeTo(Settings._coopHappyHourStart);
+                player.sendMessage(0, String.Format("&Co-Op Happy hour starts in {0} hours & {1} minutes", remaining.Hours, remaining.Minutes));
+            }
 
             //Obtain the Co-Op skill..
             SkillInfo coopskillInfo = _arena._server._assets.getSkillByID(200);

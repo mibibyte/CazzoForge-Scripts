@@ -33,11 +33,7 @@ namespace InfServer.Script.GameType_Multi
             if (_bots == null)
                 _bots = new List<Bot>();
 
-            if (_bots.Count >= _botMax)
-            {
-                Log.write(TLog.Warning, "Excessive bot spawning");
-                return;
-            }
+            
 
             if (spawnBots && _arena._bGameRunning)
             {
@@ -79,7 +75,7 @@ namespace InfServer.Script.GameType_Multi
                     int playercount = _team.ActivePlayerCount;
                     int max = Convert.ToInt32(playercount * 1);
 
-                    if (botcount < max)
+                    if (botcount < max) 
                     {
                         int add = (max - botcount);
                         _lastMarineWave = now;
@@ -109,6 +105,17 @@ namespace InfServer.Script.GameType_Multi
         {
             if (_bots == null)
                 _bots = new List<Bot>();
+
+            //Max bots?
+            if (_bots.Count >= _botMax)
+            {
+                //Unless we're a special bot type, disregard
+                if (type == BotType.Marine || type == BotType.Ripper)
+                {
+                    Log.write(TLog.Warning, "Excessive bot spawning");
+                    return false;
+                }
+            }
 
             //What kind is it?
             switch (type)
@@ -288,9 +295,19 @@ namespace InfServer.Script.GameType_Multi
                         if (team._name == "Titan Militia")
                             vehid = 133;
 
+                        int playercount = _team.ActivePlayerCount; // Adjust bot difficulty by 1 for every player after 6.
+                        if (playercount > 6)
+                        {
+                            _botDifficultyPlayerModifier = playercount - 6;
+                        }
+                        else
+                        {
+                            _botDifficultyPlayerModifier = 0;
+                        }
+
                         //Let's do 10% of marine being a Veteran Marine (more HP, diff visual look). Difficulty will up the % later.
                         Random randVetMarine = new Random(); 
-                        bool bVetMarine = (randVetMarine.Next(0, 10) <= _botDifficulty);
+                        bool bVetMarine = (randVetMarine.Next(1, 10) <= (_botDifficulty + _botDifficultyPlayerModifier));
 
                         if (bVetMarine)
                             vehid = 151;
@@ -327,9 +344,19 @@ namespace InfServer.Script.GameType_Multi
                         if (team._name == "Titan Militia")
                             vehid = 133;
 
+                        int playercount = _team.ActivePlayerCount; // Adjust bot difficulty by 1 for every player after 6.
+                        if (playercount > 6)
+                        {
+                            _botDifficultyPlayerModifier = playercount - 6;
+                        }
+                        else
+                        {
+                            _botDifficultyPlayerModifier = 0;
+                        }
+
                         //Let's do 10% of marine being a Veteran Marine (more HP, diff visual look). Difficulty will up the % later.
                         Random randVetRipper = new Random();
-                        bool bVetRipper = (randVetRipper.Next(0, 10) <= _botDifficulty);
+                        bool bVetRipper = (randVetRipper.Next(1, 10) <= (_botDifficulty + _botDifficultyPlayerModifier));
 
                         if (bVetRipper)
                             vehid = 152;

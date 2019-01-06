@@ -125,6 +125,13 @@ namespace InfServer.Script.GameType_Multi
             _lastGameCheck = now;
             bool bMinor = (now - _tickLastMinorPoll) >= 1000;
 
+
+            if (bMinor)
+            {
+                //Poll events
+                pollEvents(now);
+            }
+
             //Do we have enough players?
             int playing = _arena.PlayerCount;
             if (_arena._bGameRunning && playing < _minPlayers && _arena._bIsPublic)
@@ -427,25 +434,6 @@ namespace InfServer.Script.GameType_Multi
             if (StatsCurrent(player) == null)
                 createPlayerStats(player);
 
-            //Hide any private loot items
-            foreach (Arena.ItemDrop item in _privateLoot.Values)
-            {
-                Arena.ItemDrop spoofed = new Arena.ItemDrop();
-
-                spoofed.item = item.item;
-                spoofed.id = item.id;
-                spoofed.quantity = (short)item.quantity;
-                spoofed.positionX = 2304;
-                spoofed.positionY = 4880;
-                spoofed.relativeID = item.relativeID;
-                spoofed.freq = item.freq;
-
-                spoofed.owner = item.owner; //For bounty abuse upon pickup
-
-
-                Helpers.Object_ItemDrop(player, spoofed);
-            }
-
             //Defer to our current gametype handler!
             switch (_gameType)
             {
@@ -629,7 +617,7 @@ namespace InfServer.Script.GameType_Multi
                 if (reward.player == null) continue;
                 reward.player.sendMessage(0, String.Format("Your personal Jackpot: (MVP={0}% Rank={1} Score={2}) Rewards: (Cash={3} Experience={4} Points={5})",
                 Math.Round(reward.MVP * 100, 2), idx, reward.Score, reward.cash, reward.experience, reward.points));
-                Rewards.addCash(reward.player, reward.cash);
+                Rewards.addCash(reward.player, reward.cash, _gameType);
                 reward.player.Experience += reward.experience;
                 reward.player.BonusPoints += reward.points;
                 idx++;
@@ -677,6 +665,20 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.ItemPickup")]
         public bool playerItemPickup(Player player, Arena.ItemDrop drop, ushort quantity)
         {
+
+            //Private loot?
+            if (_privateLoot.ContainsKey(drop.id))
+            {
+                if (drop.owner != player)
+                {
+                    player.sendMessage(-1, "You can't pick up another players loot unless it was dropped by a player");
+                    return false;
+                }
+                else
+                    _privateLoot.Remove(drop.id);
+            }
+
+
             if (quantity == drop.quantity)
             {   //Delete the drop
                 drop.quantity = 0;
@@ -941,7 +943,7 @@ namespace InfServer.Script.GameType_Multi
             {
                 Logic_Assets.RunEvent(victim, _arena._server._zoneConfig.EventInfo.killedEnemy);
                 //Calculate rewards
-                Rewards.calculatePlayerKillRewards(victim, killer);
+                Rewards.calculatePlayerKillRewards(victim, killer, _gameType);
             }
 
             //Update stats
@@ -1033,7 +1035,7 @@ namespace InfServer.Script.GameType_Multi
                 Helpers.Vehicle_RouteDeath(_arena.Players, killer, dead, null);
                 if (killer != null && dead._team != killer._team)
                 {//Don't allow rewards for team kills
-                    Rewards.calculateBotKillRewards(dead, killer);
+                    Rewards.calculateBotKillRewards(dead, killer, _gameType);
                 }
 
                 killer.Kills++;
@@ -1116,6 +1118,17 @@ namespace InfServer.Script.GameType_Multi
             {
             }
             //Defer to our current gametype handler!
+
+            if ((skill.SkillId >= 0) && (skill.SkillId < 100)) // they trying to pick  class
+            {
+                for (int i = 0; i < 100; i++) // we gotta remove any class skills that already got
+                {
+                    if (from.findSkill(i) != null)
+                        from._skills.Remove(i);
+                }
+            }
+
+
             switch (_gameType)
             {
                 case Settings.GameTypes.Conquest:

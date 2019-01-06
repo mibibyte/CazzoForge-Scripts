@@ -383,7 +383,7 @@ namespace InfServer.Script.GameType_Multi
                     //Add it to our list
                     _arena._items[ik] = id;
                     //Notify the player
-                    Helpers.Object_ItemDrop(p, id);
+                    Helpers.Object_ItemDrop(_arena.Players, id);
 
 
                     if (type > LootType.Common)
@@ -398,30 +398,6 @@ namespace InfServer.Script.GameType_Multi
                                 dead._alias, name, p._alias, Helpers.posToLetterCoord(id.positionX, id.positionY)));
                         }
                     }
-
-                    //Spoof everyone else (hide the item somewhere else on the map in an inaccessible location)
-                    IEnumerable<Player> players = _arena.Players.Where(plyr => plyr != p);
-
-                    if (players.Count() > 0)
-                    {
-                        //Create our drop class		
-                        Arena.ItemDrop spoofed = new Arena.ItemDrop();
-
-                        spoofed.item = item;
-                        spoofed.id = ik;
-                        spoofed.quantity = (short)quantity;
-                        spoofed.positionX = 2304;
-                        spoofed.positionY = 4880;
-                        spoofed.relativeID = item.relativeID;
-                        spoofed.freq = p._team._id;
-
-                        spoofed.owner = p; //For bounty abuse upon pickup
-
-
-                        Helpers.Object_ItemDrop(players, spoofed);
-                        Log.write("Spoofed itemdrop");
-                    }
-
                     break;
                 }
             }
@@ -521,7 +497,7 @@ namespace InfServer.Script.GameType_Multi
                     //Add it to our list
                     _arena._items[ik] = id;
                     //Notify the player
-                    Helpers.Object_ItemDrop(p, id);
+                    Helpers.Object_ItemDrop(_arena.Players, id);
 
 
                     if (type > LootType.Common)
@@ -536,30 +512,6 @@ namespace InfServer.Script.GameType_Multi
                                 dead._type.Name, name, p._alias, Helpers.posToLetterCoord(id.positionX, id.positionY)));
                         }
                     }
-
-                    //Spoof everyone else (hide the item somewhere else on the map in an inaccessible location)
-                    IEnumerable<Player> players = _arena.Players.Where(plyr => plyr != p);
-
-                    if (players.Count() > 0)
-                    {
-                        //Create our drop class		
-                        Arena.ItemDrop spoofed = new Arena.ItemDrop();
-
-                        spoofed.item = item;
-                        spoofed.id = ik;
-                        spoofed.quantity = (short)quantity;
-                        spoofed.positionX = 2304;
-                        spoofed.positionY = 4880;
-                        spoofed.relativeID = item.relativeID;
-                        spoofed.freq = p._team._id;
-
-                        spoofed.owner = p; //For bounty abuse upon pickup
-
-
-                        Helpers.Object_ItemDrop(players, spoofed);
-                        Log.write("Spoofed itemdrop");
-                    }
-
                     break;
                 }
             }
