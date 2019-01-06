@@ -332,6 +332,14 @@ namespace InfServer.Script.GameType_Multi
         {
             player.sendMessage(0, String.Format("Welcome to Cooperative mode, {0}", player._alias));
 
+            if (Script_Multi._bCoopHappyHour)
+                player.sendMessage(0, "&Co-Op Happy hour is currently active, Enjoy!");
+            else
+            {
+                TimeSpan remaining = _baseScript.timeTo(Settings._coopHappyHourStart);
+                player.sendMessage(0, String.Format("&Co-Op Happy hour starts in {0} hours & {1} minutes", remaining.Hours, remaining.Minutes));
+            }
+
             //Obtain the Co-Op skill..
             SkillInfo coopskillInfo = _arena._server._assets.getSkillByID(200);
 

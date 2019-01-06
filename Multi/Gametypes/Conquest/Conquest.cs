@@ -352,6 +352,15 @@ namespace InfServer.Script.GameType_Multi
 
         public void playerEnterArena(Player player)
         {
+
+            if (Script_Multi._bPvpHappyHour)
+                player.sendMessage(0, "&PvP Happy hour is currently active, Enjoy!");
+            else
+            {
+                TimeSpan remaining = _baseScript.timeTo(Settings._pvpHappyHourStart);
+                player.sendMessage(0, String.Format("&PvP Happy hour starts in {0} hours & {1} minutes", remaining.Hours, remaining.Minutes));
+            }
+
             //Obtain the Co-Op skill..
             SkillInfo coopskillInfo = _arena._server._assets.getSkillByID(200);
 

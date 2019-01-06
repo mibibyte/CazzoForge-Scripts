@@ -307,7 +307,7 @@ namespace InfServer.Script.GameType_Multi
 
                         //Let's do 10% of marine being a Veteran Marine (more HP, diff visual look). Difficulty will up the % later.
                         Random randVetMarine = new Random(); 
-                        bool bVetMarine = (randVetMarine.Next(0, 10) <= (_botDifficulty + _botDifficultyPlayerModifier));
+                        bool bVetMarine = (randVetMarine.Next(1, 10) <= (_botDifficulty + _botDifficultyPlayerModifier));
 
                         if (bVetMarine)
                             vehid = 151;
@@ -356,7 +356,7 @@ namespace InfServer.Script.GameType_Multi
 
                         //Let's do 10% of marine being a Veteran Marine (more HP, diff visual look). Difficulty will up the % later.
                         Random randVetRipper = new Random();
-                        bool bVetRipper = (randVetRipper.Next(0, 10) <= (_botDifficulty + _botDifficultyPlayerModifier));
+                        bool bVetRipper = (randVetRipper.Next(1, 10) <= (_botDifficulty + _botDifficultyPlayerModifier));
 
                         if (bVetRipper)
                             vehid = 152;
