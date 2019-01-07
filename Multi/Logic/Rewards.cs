@@ -491,37 +491,30 @@ namespace InfServer.Script.GameType_Multi
         {
             //Any rare cash item?
             double multiplier = 1.0;
-            int additional = 0;
+            int cash = 0;
 
             switch (gameType)
             {
                 case Settings.GameTypes.Conquest:
                     {
                         if (Script_Multi._bPvpHappyHour)
-                        {
                             multiplier = 2.0;
-                            additional = Convert.ToInt32(quantity * multiplier);
-                        }
                         break;
                     }
                 case Settings.GameTypes.Coop:
                     {
                         if (Script_Multi._bCoopHappyHour)
-                        {
                             multiplier = 2.0;
-                            additional = Convert.ToInt32(quantity * multiplier);
-                        }
                         break;
                     }
             }
 
             if (player.getInventoryAmount(2019) > 0)
-            { 
-                multiplier = 1.10;
-                additional = Convert.ToInt32(quantity * multiplier);
-            }
+                multiplier += 0.10;
 
-            player.Cash += additional;
+            cash = Convert.ToInt32(quantity * multiplier);
+
+            player.Cash += cash;
             player.syncState();
         }
     }

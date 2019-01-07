@@ -967,7 +967,8 @@ namespace InfServer.Script.GameType_Multi
 
 
             //Check for players in the share radius
-            List<Player> playersInRadius = _arena.getPlayersInRange(victim._state.positionX, victim._state.positionY, 450, false);
+            List<Player> playersInRadius = _arena.getPlayersInRange(victim._state.positionX, victim._state.positionY, 450, false)
+                .Where(p => p._team != victim._team && p != victim).ToList();
 
             //Killer is always added...
             if (!playersInRadius.Contains(killer))
