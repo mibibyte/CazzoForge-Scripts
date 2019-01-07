@@ -76,13 +76,22 @@ namespace InfServer.Script.GameType_Multi
                 {
                     _botDifficulty = 3;
                 }
-                else if (_arena._name.EndsWith("Expert"))
+
+                if (_arena._name.EndsWith("Expert"))
                 {
                     _botDifficulty = 6;
                 }
-                else if (_arena._name.EndsWith("Insane"))
+                if (_arena._name.EndsWith("Master"))
                 {
-                    _botDifficulty = 10;
+                    _botDifficulty = 9;
+                }
+                if (_arena._name.EndsWith("Elite"))
+                {
+                    _botDifficulty = 12;
+                }
+                if (_arena._name.EndsWith("Insane"))
+                {
+                    _botDifficulty = 15;
                 }
             }
 
@@ -163,7 +172,13 @@ namespace InfServer.Script.GameType_Multi
             _secondHeavyExoWave = false;
             _thirdHeavyExoWave = false;
 
-            _lastSupplyDrop = Environment.TickCount;
+            _firstDifficultyWave = false;
+            _secondDifficultyWave = false;
+            _thirdDifficultyWave = false;
+            _fourthDifficultyWave = false;
+            _fifthDifficultyWave = false;
+
+        _lastSupplyDrop = Environment.TickCount;
             _lastHPChange = Environment.TickCount;
             hpMultiplier = 0.25;
 
@@ -172,8 +187,6 @@ namespace InfServer.Script.GameType_Multi
             _baseScript._lastSpawn = new Dictionary<string, Helpers.ObjectState>();
 
             _totalFlags = _flags.Count;
-             //should be redundant , remove later
-             _bots = new List<Bot>();
 
 
             int flagcount = 1;
@@ -346,6 +359,30 @@ namespace InfServer.Script.GameType_Multi
             //Add the skill!
             if (player.findSkill(200) == null)
             player.skillModify(coopskillInfo, 1);
+
+            if (_botDifficulty <= 6)
+            {
+                player.sendMessage(2, String.Format("Powerups are enabled for this difficulty, {0}", player._alias));
+
+                //Obtain the Co-Op skill..
+                SkillInfo powerupskillInfo = _arena._server._assets.getSkillByID(201);
+
+                //Add the skill!
+                if (player.findSkill(201) == null)
+                    player.skillModify(powerupskillInfo, 1);
+
+            }
+            else
+            {
+                player.sendMessage(2, String.Format("Powerups are disabled for this difficulty, {0}", player._alias));
+                //Obtain the Powerup skill..
+                SkillInfo powerupskillInfo2 = _arena._server._assets.getSkillByID(201);
+
+                //Add the skill!
+                if (player.findSkill(201) != null)
+                    player._skills.Remove(201);
+            }
+            
         }
 
         public void playerLeaveArena(Player player)

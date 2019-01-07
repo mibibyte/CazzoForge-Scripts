@@ -367,6 +367,14 @@ namespace InfServer.Script.GameType_Multi
             //Add the skill!
             if (player.findSkill(200) != null)
                 player._skills.Remove(200);
+
+            //Obtain the Powerup skill..
+            SkillInfo powerupskillInfo = _arena._server._assets.getSkillByID(201);
+
+            //Add the skill!
+            if (player.findSkill(201) != null)
+                player._skills.Remove(201);
+
         }
 
         public void playerLeaveArena(Player player)
