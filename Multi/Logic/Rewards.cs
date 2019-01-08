@@ -66,7 +66,7 @@ namespace InfServer.Script.GameType_Multi
             }
             int totalHPHealed = 0;
             int totalFlagCaps = 0;
-        
+
             switch (gameType)
             {
                 case Settings.GameTypes.Conquest:
@@ -203,7 +203,7 @@ namespace InfServer.Script.GameType_Multi
             }
 
             //Update his stats
-            addCash(killer, killerCash, gameType);
+            killerCash = addCash(killer, killerCash, gameType);
             killer.Experience += killerExp;
             killer.KillPoints += killerPoints;
             //killer.Bounty += killerBounty;
@@ -241,14 +241,16 @@ namespace InfServer.Script.GameType_Multi
                 if (p == killer || p._team != killer._team)
                     continue;
 
+                cashRewards[p._id] = addCash(p, cashRewards[p._id], gameType);
+                p.Experience += expRewards[p._id];
+                p.AssistPoints += pointRewards[p._id];
+
                 //Let em know
                 p.triggerMessage(4, 500,
                     String.Format("{0} killed by {1} (Cash={2} Exp={3} Points={4})",
                     victim._type.Name, killer._alias, cashRewards[p._id],
                     expRewards[p._id], pointRewards[p._id]));
-                addCash(p, cashRewards[p._id], gameType);
-                p.Experience += expRewards[p._id];
-                p.AssistPoints += pointRewards[p._id];
+
 
                 //Sync their state
                 p.syncState();
@@ -322,7 +324,7 @@ namespace InfServer.Script.GameType_Multi
             Helpers.Player_RouteKill(killer, update, victim, killerCash, killerPoints, killerPoints, killerExp);
 
             //Update some statistics
-            addCash(killer, killerCash, gameType);
+            killerCash = addCash(killer, killerCash, gameType);
             killer.Experience += killerExp;
             killer.KillPoints += killerPoints;
             victim.DeathPoints += killerPoints;
@@ -387,11 +389,10 @@ namespace InfServer.Script.GameType_Multi
                 if (p == killer || p._team != killer._team)
                     continue;
 
-                Helpers.Player_RouteKill(p, update, victim, cashRewards[p._id], killerPoints, pointRewards[p._id], expRewards[p._id]);
-                addCash(p, cashRewards[p._id], gameType);
+                cashRewards[p._id] = addCash(p, cashRewards[p._id], gameType);
                 p.Experience += expRewards[p._id];
                 p.AssistPoints += pointRewards[p._id];
-
+                Helpers.Player_RouteKill(p, update, victim, cashRewards[p._id], killerPoints, pointRewards[p._id], expRewards[p._id]);
                 sentTo.Add(p._id);
             }
 
@@ -402,10 +403,11 @@ namespace InfServer.Script.GameType_Multi
 
                 if (!sentTo.Contains(p._id))
                 {
-                    Helpers.Player_RouteKill(p, update, victim, cashRewards[p._id], killerPoints, pointRewards[p._id], expRewards[p._id]);
-                    addCash(p, cashRewards[p._id], gameType);
+                    cashRewards[p._id] = addCash(p, cashRewards[p._id], gameType);
                     p.Experience += expRewards[p._id];
                     p.AssistPoints += pointRewards[p._id];
+
+                    Helpers.Player_RouteKill(p, update, victim, cashRewards[p._id], killerPoints, pointRewards[p._id], expRewards[p._id]);
 
                     sentTo.Add(p._id);
                 }
@@ -420,10 +422,11 @@ namespace InfServer.Script.GameType_Multi
                 {	//Update the assist bounty
                     p.Bounty += BtyShare;
 
-                    Helpers.Player_RouteKill(p, update, victim, cashRewards[p._id], killerPoints, pointRewards[p._id], expRewards[p._id]);
-                    addCash(p, cashRewards[p._id], gameType);
+                    cashRewards[p._id] = addCash(p, cashRewards[p._id], gameType);
                     p.Experience += expRewards[p._id];
                     p.AssistPoints += pointRewards[p._id];
+
+                    Helpers.Player_RouteKill(p, update, victim, cashRewards[p._id], killerPoints, pointRewards[p._id], expRewards[p._id]);
 
                     sentTo.Add(p._id);
                 }
@@ -487,7 +490,7 @@ namespace InfServer.Script.GameType_Multi
             }
         }
 
-        static public void addCash(Player player, int quantity, Settings.GameTypes gameType)
+        static public int addCash(Player player, int quantity, Settings.GameTypes gameType)
         {
             //Any rare cash item?
             double multiplier = 1.0;
@@ -516,6 +519,39 @@ namespace InfServer.Script.GameType_Multi
 
             player.Cash += cash;
             player.syncState();
+
+            return cash;
         }
+
+        public static double calculateDiffMod(long points, int difficulty)
+        {
+            double result = 1;
+            int playerLevel = 0;
+
+            if (points >= 1000)
+                playerLevel = 1;
+            if (points >= 100000)
+                playerLevel = 2;
+            if (points >= 200000)
+                playerLevel = 3;
+            if (points >= 400000)
+                playerLevel = 4;
+            if (points >= 600000)
+                playerLevel = 5;
+            if (points >= 800000)
+                playerLevel = 6;
+            if (points >= 1000000)
+                playerLevel = 7;
+            if (points >= 5000000)
+                playerLevel = 8;
+            if (points >= 10000000)
+                playerLevel = 9;
+            if (points >= 20000000)
+                playerLevel = 10;
+
+            result = Convert.ToDouble(((double)difficulty / playerLevel) / 10);
+            return result;
+        }
+
     }
 }

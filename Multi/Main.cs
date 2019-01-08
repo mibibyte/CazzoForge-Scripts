@@ -266,14 +266,13 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.MakeVehicle")]
         public bool playerMakeVehicle(Player player, ItemInfo.VehicleMaker item, short posX, short posY)
         {
-
             return true;
         }
 
         [Scripts.Event("Player.WarpItem")]
         public bool playerWarpItem(Player player, ItemInfo.WarpItem item, ushort targetVehicle, short posX, short posY)
         {
-            return false;
+            return true;
         }
 
         /// <summary>
@@ -388,6 +387,7 @@ namespace InfServer.Script.GameType_Multi
             }
             return false;
         }
+        
 
         /// <summary>
         /// Called when a player enters the arena
@@ -615,11 +615,35 @@ namespace InfServer.Script.GameType_Multi
             foreach (Rewards.Jackpot.Reward reward in rankers)
             {
                 if (reward.player == null) continue;
+
+
+
+
+
+                reward.cash = Rewards.addCash(reward.player, reward.cash, _gameType);
                 reward.player.sendMessage(0, String.Format("Your personal Jackpot: (MVP={0}% Rank={1} Score={2}) Rewards: (Cash={3} Experience={4} Points={5})",
                 Math.Round(reward.MVP * 100, 2), idx, reward.Score, reward.cash, reward.experience, reward.points));
-                Rewards.addCash(reward.player, reward.cash, _gameType);
                 reward.player.Experience += reward.experience;
                 reward.player.BonusPoints += reward.points;
+
+                //Adjust depending on difficulty for coop
+                if (_gameType == Settings.GameTypes.Coop)
+                {
+                    int bonusCash = 0;
+                    int bonusExp = 0;
+                    int bonusPoints = 0;
+                    double mod = Rewards.calculateDiffMod(reward.player.Points, _coop._botDifficulty + _coop._botDifficultyPlayerModifier);
+                    bonusCash = Convert.ToInt32(((jackpot.totalJackPot * Settings.c_difficulty_CashMultiplier) * mod));
+                    bonusExp = Convert.ToInt32(((jackpot.totalJackPot * Settings.c_difficulty_ExpMultiplier) * mod));
+                    bonusPoints = Convert.ToInt32(((jackpot.totalJackPot * Settings.c_difficulty_PtsMultiplier) * mod));
+
+                    reward.player.sendMessage(0, String.Format("Difficulty Bonus: (Cash={0} Experience={1} Points={2})", bonusCash, bonusExp, bonusPoints));
+                    reward.player.Cash += bonusCash;
+                    reward.player.Experience += bonusExp;
+                    reward.player.BonusPoints += bonusPoints;
+                    reward.player.syncState();
+                }
+
                 idx++;
             }
             return true;
