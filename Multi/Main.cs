@@ -627,7 +627,7 @@ namespace InfServer.Script.GameType_Multi
                 reward.player.BonusPoints += reward.points;
 
                 //Adjust depending on difficulty for coop
-                if (_gameType == Settings.GameTypes.Coop)
+                if (_gameType == Settings.GameTypes.Coop && _winner == _coop._team)
                 {
                     int bonusCash = 0;
                     int bonusExp = 0;
@@ -637,7 +637,7 @@ namespace InfServer.Script.GameType_Multi
                     bonusExp = Convert.ToInt32(((jackpot.totalJackPot * Settings.c_difficulty_ExpMultiplier) * mod));
                     bonusPoints = Convert.ToInt32(((jackpot.totalJackPot * Settings.c_difficulty_PtsMultiplier) * mod));
 
-                    reward.player.sendMessage(0, String.Format("Difficulty Bonus: (Cash={0} Experience={1} Points={2})", bonusCash, bonusExp, bonusPoints));
+                    reward.player.sendMessage(0, String.Format("Victory difficulty Bonus: (Cash={0} Experience={1} Points={2})", bonusCash, bonusExp, bonusPoints));
                     reward.player.Cash += bonusCash;
                     reward.player.Experience += bonusExp;
                     reward.player.BonusPoints += bonusPoints;
@@ -903,30 +903,39 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.Produce")]
         public bool playerProduce(Player player, Computer computer, VehInfo.Computer.ComputerProduct product)
         {
-            if (computer._type.Name == "Supply Drop")
+            switch (computer._type.Name)
             {
-                if (product.Title == "Open Supplies")
-                {
-                    SupplyDrop drop = _supplyDrops.First(s => s._computer == computer);
+                case "Supply Drop":
+                    {
+                        if (product.Title == "Open Supplies")
+                        {
+                            SupplyDrop drop = _supplyDrops.First(s => s._computer == computer);
 
-                    if (drop == null)
-                        return true;
+                            if (drop == null)
+                                return true;
 
-                    drop.open(player);
-                }
-            }
+                            drop.open(player);
+                        }
+                    }
+                    break;
+                case "Blacksmith":
+                    {
+                        string itemName;
 
-            if (computer._type.Name == "Blacksmith")
-            {
-                string itemName;
+                        if (product.Title.StartsWith("Build"))
+                        {
+                            itemName = product.Title.Substring(5, product.Title.Length - 5).Trim();
 
-                if (product.Title.StartsWith("Build"))
-                {
-                    itemName = product.Title.Substring(5, product.Title.Length - 5).Trim();
-
-                    return _crafting.playerCraftItem(player, itemName);
-                }
-               
+                            return _crafting.playerCraftItem(player, itemName);
+                        }
+                    }
+                    break;
+                case "Engineer":
+                    return tryEngineer(player, computer, product);
+                case "Iron Refinery":
+                    return tryIronRefinery(player, computer, product);
+                case "Helmet Trader":
+                    return tryHelmetTrade(player, computer, product);
             }
             return true;
         }
