@@ -46,6 +46,7 @@ namespace InfServer.Script.GameType_Multi
 
             List<Player> enemies = new List<Player>();
             enemies = _arena.getPlayersInRange(sortedFlags.Last().posX, sortedFlags.Last().posY, _engagedRadius).Where(p => p._team != player._team).ToList();
+            int botCount = _arena.getVehiclesInRange(sortedFlags.Last().posX, sortedFlags.Last().posY, _engagedRadius).Where(v => v._team != player._team).Count();
 
             if (enemies.Count() > 0 && !bCoop)
             {
@@ -55,7 +56,7 @@ namespace InfServer.Script.GameType_Multi
                     warpPoint.positionX = (short)(sortedFlags.First().posX + ScaleOffset());
             }
 
-            if (bCoop && sortedFlags.Last().flag.GeneralData.Name != "Titan Home")
+            if (bCoop && sortedFlags.Last().flag.GeneralData.Name != "Titan Home" && botCount > 0)
             {
                 if (player._team._name == "Titan Militia")
                     warpPoint.positionX = (short)(sortedFlags.First().posX - 1000);

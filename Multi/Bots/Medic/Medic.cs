@@ -284,6 +284,9 @@ namespace InfServer.Script.GameType_Multi
             if (_arena.getTerrain(target._state.positionX, target._state.positionY).safety)
                 return false;
 
+            if (target._occupiedVehicle._type.Weight > 10)
+                return false;
+
             //Is it too far away?
             if (Helpers.distanceTo(this, target) >= 1000)
                 return false;
@@ -323,6 +326,9 @@ namespace InfServer.Script.GameType_Multi
                 return false;
 
             if (_game._targetedPlayers.Where(t => t.Key != _id && t.Value == target).Count() > 0)
+                return false;
+
+            if (target._occupiedVehicle._type.Weight > 10)
                 return false;
 
             //Is it too far away?
