@@ -38,6 +38,7 @@ namespace InfServer.Script.GameType_Multi
 
         //Jackpot CO-OP
         public const int c_jackpot_Co_Fixed = 8000;
+        public const int c_DifficultyBonus_Fixed = 5000;
         public const int c_jackpot_Co_PointsPerKill = 2;
         public const int c_jackpot_Co_PointsPerDeath = 4;
         public const int c_jackpot_Co_PointsPerFlag = 5;
@@ -49,6 +50,11 @@ namespace InfServer.Script.GameType_Multi
         //JackpotRewards
         public const double c_jackpot_CashMultiplier = 0.5;
         public const double c_jackpot_ExpMultiplier = 0.25;
+
+        //Difficulty
+        public const double c_difficulty_CashMultiplier = 0.35;
+        public const double c_difficulty_ExpMultiplier = 0.25;
+        public const double c_difficulty_PtsMultiplier = 0.35;
 
         public enum GameTypes
         {

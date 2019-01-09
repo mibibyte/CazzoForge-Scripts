@@ -321,14 +321,6 @@ namespace InfServer.Script.GameType_Multi
 
         public bool playerUnspec(Player player)
         {
-            //if (_arena._name != "[Co-Op] Public4")
-           // {
-               // if (_team.ActivePlayerCount >= 7)
-              //  {
-               //     player.sendMessage(0, String.Format("This arena's Co-Op Mode is currently full - Please try a different arena, {0}", player._alias));
-                //    return false;
-               // }
-           // }
             player.unspec(_team);
             return true;
         }

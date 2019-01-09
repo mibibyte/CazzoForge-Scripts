@@ -32,21 +32,20 @@ namespace InfServer.Script.GameType_Multi
             bool bCoopHappyHour = isHappyHour(Settings._coopHappyHourStart, Settings._coopHappyHourEnd);
             bool bPvpHappyHour = isHappyHour(Settings._pvpHappyHourStart, Settings._pvpHappyHourEnd);
 
-            if (!_bCoopHappyHour && now - _lastCoopHappyHourAlert >= 900000 && timeTo(Settings._coopHappyHourStart).Hours < 2)
+            if (!_bCoopHappyHour && now - _lastCoopHappyHourAlert >= 900000 && timeTo(Settings._coopHappyHourStart).Hours < 1)
             {
                 TimeSpan remaining = timeTo(Settings._coopHappyHourStart);
-                foreach (Arena arena in _arena._server._arenas.Values)
-                    arena.sendArenaMessage(String.Format("&Happy hour in all Public Co-Op arenas starts in {0} hour(s) & {1} minute(s)", 
+
+                    _arena.sendArenaMessage(String.Format("&Happy hour in all Public Co-Op arenas starts in {0} hour(s) & {1} minute(s)", 
                         remaining.Hours, remaining.Minutes), 4);
 
                 _lastCoopHappyHourAlert = now;
             }
 
-            if (!_bPvpHappyHour && now - _lastPvpHappyHourAlert >= 900000 && timeTo(Settings._pvpHappyHourStart).Hours < 2)
+            if (!_bPvpHappyHour && now - _lastPvpHappyHourAlert >= 900000 && timeTo(Settings._pvpHappyHourStart).Hours < 1)
             {
-                TimeSpan remaining = timeTo(Settings._coopHappyHourStart);
-                foreach (Arena arena in _arena._server._arenas.Values)
-                    arena.sendArenaMessage(String.Format("&Happy hour in all Public PvP arenas starts in {0} hour(s) & {1} minute(s)",
+                TimeSpan remaining = timeTo(Settings._pvpHappyHourStart);
+                _arena.sendArenaMessage(String.Format("&Happy hour in all Public PvP arenas starts in {0} hour(s) & {1} minute(s)",
                         remaining.Hours, remaining.Minutes), 4);
 
                 _lastPvpHappyHourAlert = now;
@@ -58,8 +57,8 @@ namespace InfServer.Script.GameType_Multi
 
                 if (_tickCoopHappyHourStart == 0)
                 {
-                    foreach (Arena arena in _arena._server._arenas.Values)
-                        arena.sendArenaMessage(String.Format("&Happy hour in all Public Co-Op arenas is now active until 9pm EST"), 4);
+                    
+                     _arena.sendArenaMessage(String.Format("&Happy hour in all Public Co-Op arenas is now active until 9pm EST"), 4);
 
                     _tickCoopHappyHourStart = now;
                 }
@@ -76,8 +75,7 @@ namespace InfServer.Script.GameType_Multi
 
                 if (_tickPvpHappyHourStart == 0)
                 {
-                    foreach (Arena arena in _arena._server._arenas.Values)
-                        arena.sendArenaMessage(String.Format("&Happy hour in all Public PvP arenas is now active until 10pm EST"), 4);
+                    _arena.sendArenaMessage(String.Format("&Happy hour in all Public PvP arenas is now active until 10pm EST"), 4);
 
                     _tickPvpHappyHourStart = now;
                 }

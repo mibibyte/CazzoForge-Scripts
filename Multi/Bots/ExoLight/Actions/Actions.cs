@@ -267,19 +267,9 @@ namespace InfServer.Script.GameType_Multi
                            delegate (List<Vector3> path, int pathLength)
                            {
                                if (path != null)
-                               {   //Is the path too long?
-                                   if (pathLength > c_MaxPath)
-                                   {   //Destroy ourself and let another zombie take our place
-                                       //_path = null; Destroying Disasbled for now, may replace with a distance from enemy check
-                                       //destroy(true);
+                               {
                                        _path = path;
                                        _pathTarget = 1;
-                                   }
-                                   else
-                                   {
-                                       _path = path;
-                                       _pathTarget = 1;
-                                   }
                                }
 
                                _tickLastPath = now;
