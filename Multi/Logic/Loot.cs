@@ -375,7 +375,7 @@ namespace InfServer.Script.GameType_Multi
                     id.owner = p; //For bounty abuse upon pickup
 
                     //Add it to our private loot tracker
-                    _script._privateLoot.Add(id.id, id);
+                    _script._privateLoot.Add(id.id, new LootDrop(id, p, Environment.TickCount, ik));
 
                     int expire = _arena.getTerrain(positionX, positionY).prizeExpire;
                     id.tickExpire = (expire > 0 ? (Environment.TickCount + (expire * 1000)) : 0);
@@ -489,7 +489,7 @@ namespace InfServer.Script.GameType_Multi
                     id.owner = p; //For bounty abuse upon pickup
 
                     //Add it to our private loot tracker
-                    _script._privateLoot.Add(id.id, id);
+                    _script._privateLoot.Add(id.id, new LootDrop(id, p, Environment.TickCount, ik));
 
                     int expire = _arena.getTerrain(positionX, positionY).prizeExpire;
                     id.tickExpire = (expire > 0 ? (Environment.TickCount + (expire * 1000)) : 0);

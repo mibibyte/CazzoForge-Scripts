@@ -17,15 +17,20 @@ namespace InfServer.Script.GameType_Multi
 {
     public class LootDrop
     {
-        private List<ItemInfo> _loot;           //The loot in our drop
+        public Arena.ItemDrop _item;
         public Player _owner;                   //The player that owns this loot (Only visible to him)
+        public int _tickCreation;
+        public ushort _id;
 
         /// <summary>
         /// Constructor
         /// </summary>
-        public LootDrop()
+        public LootDrop(Arena.ItemDrop item, Player owner, int tickCreation, ushort id)
         {
-
+            _item = item;
+            _owner = owner;
+            _tickCreation = tickCreation;
+            _id = id;
         }
     }
 }

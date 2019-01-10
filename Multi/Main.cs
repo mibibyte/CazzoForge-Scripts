@@ -28,7 +28,8 @@ namespace InfServer.Script.GameType_Multi
         private List<string> _earlyAccessList;
         private bool _isEarlyAccess;
         public bool bJackpot;
-        public Dictionary<ushort, Arena.ItemDrop> _privateLoot;
+        public Dictionary<ushort, LootDrop> _privateLoot;
+        public Dictionary<ushort, LootDrop> _condemnedLoot;
 
         //Addon Classes
         Upgrade _upgrader;
@@ -40,6 +41,7 @@ namespace InfServer.Script.GameType_Multi
         private int _tickGameStarted;       //Tick at which the game actually started (0 == stopped)
         private int _tickLastMinorPoll;
         private int _lastKillStreakUpdate;
+        private int _lastLootMarker;
 
         //Misc variables
         private int _tickStartDelay;
@@ -84,7 +86,8 @@ namespace InfServer.Script.GameType_Multi
             _loot = new Loot(_arena, this);
             _crafting = new Crafting();
             _loot.Load(_arena._server);
-            _privateLoot = new Dictionary<ushort, Arena.ItemDrop>();
+            _privateLoot = new Dictionary<ushort, LootDrop>();
+            _condemnedLoot = new Dictionary<ushort, LootDrop>();
 
             //Default to Conquest
             _gameType = Settings.GameTypes.Conquest;
@@ -127,9 +130,31 @@ namespace InfServer.Script.GameType_Multi
 
 
             if (bMinor)
-            {
                 //Poll events
                 pollEvents(now);
+
+
+            foreach (LootDrop loot in _privateLoot.Values)
+            {
+                if (loot._item.tickExpire != 0 && now > loot._item.tickExpire)
+                    _condemnedLoot.Add(loot._id, loot);
+            }
+
+            foreach (LootDrop item in _condemnedLoot.Values)
+                _privateLoot.Remove(item._id);
+            _condemnedLoot.Clear();
+
+            //Loot marking
+            if (_privateLoot.Count > 0 && now - _lastLootMarker >= 1000)
+            {
+                foreach (LootDrop loot in _privateLoot.Values)
+                {
+                    List<Player> targets = new List<Player>();
+                    targets.Add(loot._owner);
+
+                    if (now - loot._tickCreation < 60000)
+                    Helpers.Player_RouteExplosion(targets, 1406, loot._item.positionX, loot._item.positionY, 0, 0, 0);
+                }
             }
 
             //Do we have enough players?
@@ -689,13 +714,15 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.ItemPickup")]
         public bool playerItemPickup(Player player, Arena.ItemDrop drop, ushort quantity)
         {
+            int now = Environment.TickCount;
 
             //Private loot?
             if (_privateLoot.ContainsKey(drop.id))
             {
-                if (drop.owner != player)
+                LootDrop loot = _privateLoot[drop.id];
+                if (drop.owner != player && now - loot._tickCreation < 60000)
                 {
-                    player.sendMessage(-1, "You can't pick up another players loot unless it was dropped by a player");
+                    player.sendMessage(0, "You can't pick up another players loot unless it was dropped by a player");
                     return false;
                 }
                 else
