@@ -16,6 +16,7 @@ namespace InfServer.Script.GameType_Multi
     public partial class Coop
     {
         public List<Bot> _bots;
+        public List<Bot> _condemnedBots;
         public Dictionary<ushort, Player> _targetedPlayers;
         public double hpMultiplier = 0.25;
         public int _lastHPChange;

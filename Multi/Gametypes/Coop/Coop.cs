@@ -53,6 +53,7 @@ namespace InfServer.Script.GameType_Multi
             _allPoints = new List<CapturePoint>();
 
             _bots = new List<Bot>();
+            _condemnedBots = new List<Bot>();
             spawnBots = true;
             _targetedPlayers = new Dictionary<ushort, Player>();
 
@@ -178,17 +179,6 @@ namespace InfServer.Script.GameType_Multi
             _fourthDifficultyWave = false;
             _fifthDifficultyWave = false;
 
-            _sixthDifficultyWave = false;
-            _seventhDifficultyWave = false;
-            _eighthDifficultyWave = false;
-            _ninthDifficultyWave = false;
-            _tenthDifficultyWave = false;
-            _eleventhDifficultyWave = false;
-            _twelvthDifficultyWave = false;
-            _thirteenthDifficultyWave = false;
-            _fourteenthDifficultyWave = false;
-            _fifthteenthDifficultyWave = false;
-
         _lastSupplyDrop = Environment.TickCount;
             _lastHPChange = Environment.TickCount;
             hpMultiplier = 0.25;
@@ -262,6 +252,15 @@ namespace InfServer.Script.GameType_Multi
 
         public void gameEnd()
         {
+            foreach (Bot bot in _bots)
+                _condemnedBots.Add(bot);
+
+            foreach (Bot bot in _condemnedBots)
+                bot.destroy(false);
+
+            _condemnedBots.Clear();
+            _bots.Clear();
+
             int conquered = (_flagsCaptured / _totalFlags) * 100;
 
             if (conquered == 100)
