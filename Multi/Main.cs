@@ -134,12 +134,11 @@ namespace InfServer.Script.GameType_Multi
                 pollEvents(now);
 
 
+            //Keep track of expired items
             foreach (LootDrop loot in _privateLoot.Values)
-            {
                 if (loot._item.tickExpire != 0 && now > loot._item.tickExpire)
                     _condemnedLoot.Add(loot._id, loot);
-            }
-
+            //Buhbye
             foreach (LootDrop item in _condemnedLoot.Values)
                 _privateLoot.Remove(item._id);
             _condemnedLoot.Clear();
@@ -152,7 +151,8 @@ namespace InfServer.Script.GameType_Multi
                     List<Player> targets = new List<Player>();
                     targets.Add(loot._owner);
 
-                    if (now - loot._tickCreation < 60000)
+                    //If the item is still reserved, mark it
+                    if (now - loot._tickCreation < Settings.c_unblockLoot)
                     Helpers.Player_RouteExplosion(targets, 1406, loot._item.positionX, loot._item.positionY, 0, 0, 0);
                 }
             }
@@ -720,7 +720,7 @@ namespace InfServer.Script.GameType_Multi
             if (_privateLoot.ContainsKey(drop.id))
             {
                 LootDrop loot = _privateLoot[drop.id];
-                if (drop.owner != player && now - loot._tickCreation < 60000)
+                if (drop.owner != player && now - loot._tickCreation < Settings.c_unblockLoot)
                 {
                     player.sendMessage(0, "You can't pick up another players loot unless it was dropped by a player");
                     return false;

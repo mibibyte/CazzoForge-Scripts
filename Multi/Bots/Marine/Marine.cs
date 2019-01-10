@@ -97,8 +97,8 @@ namespace InfServer.Script.GameType_Multi
             {
                 _tickLastRadarDot = now;
                 IEnumerable<Player> enemies = _arena.Players.Where(p => p._team != _team);
-                Helpers.Player_RouteExplosion(_team.ActivePlayers, 1131, _state.positionX, _state.positionY, 0, 0, 0);
-                Helpers.Player_RouteExplosion(enemies, 1130, _state.positionX, _state.positionY, 0, 0, 0);
+                //Helpers.Player_RouteExplosion(_team.ActivePlayers, 1131, _state.positionX, _state.positionY, 0, 0, 0);
+                //Helpers.Player_RouteExplosion(enemies, 1130, _state.positionX, _state.positionY, 0, 0, 0);
             }
 
             pollForActions(now);
