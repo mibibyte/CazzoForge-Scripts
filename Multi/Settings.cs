@@ -7,6 +7,8 @@ namespace InfServer.Script.GameType_Multi
 {
     public abstract class Settings
     {
+        //Misc
+        public const int c_unblockLoot = 30000;
 
         //Happy Hour Settings
         public static TimeSpan _coopHappyHourStart = TimeSpan.Parse("17:00"); // 8 PM
