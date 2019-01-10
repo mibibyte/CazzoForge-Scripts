@@ -526,30 +526,29 @@ namespace InfServer.Script.GameType_Multi
         public static double calculateDiffMod(long points, int difficulty)
         {
             double result = 1;
-            int playerLevel = 0;
+            int playerLevel = 1;
 
-            if (points >= 1000)
-                playerLevel = 1;
-            if (points >= 100000)
+            if (points >= 50000)
                 playerLevel = 2;
-            if (points >= 200000)
+            if (points >= 100000)
                 playerLevel = 3;
-            if (points >= 400000)
+            if (points >= 200000)
                 playerLevel = 4;
-            if (points >= 600000)
+            if (points >= 400000)
                 playerLevel = 5;
             if (points >= 800000)
                 playerLevel = 6;
-            if (points >= 1000000)
+            if (points >= 1600000)
                 playerLevel = 7;
-            if (points >= 5000000)
+            if (points >= 3200000)
                 playerLevel = 8;
-            if (points >= 10000000)
+            if (points >= 6400000)
                 playerLevel = 9;
-            if (points >= 20000000)
+            if (points >= 12800000)
                 playerLevel = 10;
 
-            result = Convert.ToDouble(((double)difficulty / playerLevel) / 10);
+
+            result = Convert.ToDouble(((double)difficulty / playerLevel) / 3);
             return result;
         }
 

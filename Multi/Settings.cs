@@ -12,7 +12,7 @@ namespace InfServer.Script.GameType_Multi
         public static TimeSpan _coopHappyHourStart = TimeSpan.Parse("17:00"); // 8 PM
         public static TimeSpan _coopHappyHourEnd = TimeSpan.Parse("18:00");   // 9 PM
         public static TimeSpan _pvpHappyHourStart = TimeSpan.Parse("18:00"); // 9 PM
-        public static TimeSpan _pvpHappyHourEnd = TimeSpan.Parse("19:00");   // 10 PM
+        public static TimeSpan _pvpHappyHourEnd = TimeSpan.Parse("20:00");   // 10 PM
         public const double c_happyHourMultiplier = 2;
 
         //KillRewards
