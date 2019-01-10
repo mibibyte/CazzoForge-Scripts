@@ -197,11 +197,11 @@ namespace InfServer.Script.GameType_Multi
             else
             {
                 friendlyflag = _arena._flags.Values.OrderBy(f => f.posX).Where(f => f.team == _team).First();
-                enemyflags = flags.Where(f => f.team != _team).ToList();
+                enemyflags = _arena._flags.Values.OrderByDescending(f => f.posX).Where(f => f.team != _team).Take(2).ToList();
             }
 
             if (enemyflags.Count >= 3)
-                targetFlag = enemyflags[_rand.Next(0, 2)];
+                targetFlag = enemyflags[_rand.Next(0, 1)];
             else
                 targetFlag = enemyflags[0];
 
@@ -245,6 +245,7 @@ namespace InfServer.Script.GameType_Multi
                                    _path = path;
                                    _pathTarget = 1;
                                }
+
                                _tickLastPath = now;
                            }
                 );
@@ -258,6 +259,89 @@ namespace InfServer.Script.GameType_Multi
                 steering.steerDelegate = steerAlongPath;
         }
 
+        public void wander(int now)
+        {
+            if (_targetPoint == null)
+                _targetPoint = getTargetPoint();
+
+
+            //What is our distance to the target?
+            double distance = (_state.position() - _targetPoint.position()).Length;
+
+            //Are we there yet?
+            if (distance < patrolDist)
+            {
+                _targetPoint = null;
+                return;
+            }
+
+            //Does our path need to be updated?
+            if (now - _tickLastPath > c_pathUpdateInterval)
+            {
+                _arena._pathfinder.queueRequest(
+                           (short)(_state.positionX / 16), (short)(_state.positionY / 16),
+                           (short)(_targetPoint.positionX / 16), (short)(_targetPoint.positionY / 16),
+                           delegate (List<Vector3> path, int pathLength)
+                           {
+                               if (path != null)
+                               {
+                                   _path = path;
+                                   _pathTarget = 1;
+                               }
+
+                               _tickLastPath = now;
+                           }
+                );
+            }
+
+            //Navigate to him
+            if (_path == null)
+                //If we can't find out way to him, just mindlessly walk in his direction for now
+                steering.steerDelegate = steerForPersuePlayer;
+            else
+                steering.steerDelegate = steerAlongPath;
+        }
+
+
+        public Helpers.ObjectState getTargetPoint()
+        {
+            Helpers.ObjectState target = new Helpers.ObjectState();
+
+            Arena.FlagState targetFlag;
+            List<Arena.FlagState> flags;
+
+            flags = _arena._flags.Values.OrderBy(f => f.posX).ToList();
+            int flagCount = flags.Where(f => f.team == _team).Count();
+
+
+            if (flagCount > 2)
+                targetFlag = _arena._flags.Values.OrderBy(f => f.posX).Where(f => f.team == _team).First();
+            else
+                targetFlag = flags.Where(f => f.team != _team).Last();
+
+            int blockedAttempts = 30;
+            short pX;
+            short pY;
+            while (true)
+            {
+                pX = targetFlag.posX;
+                pY = targetFlag.posY;
+                Helpers.randomPositionInArea(_arena, 3000, ref pX, ref pY);
+                if (_arena.getTile(pX, pY).Blocked)
+                {
+                    blockedAttempts--;
+                    if (blockedAttempts <= 0)
+                        //Consider the spawn to be blocked
+                        return null;
+                    continue;
+                }
+
+                target.positionX = targetFlag.posX;
+                target.positionY = pY;
+                break;
+            }
+            return target;
+        }
 
         public class Action
         {

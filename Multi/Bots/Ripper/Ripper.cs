@@ -28,6 +28,7 @@ namespace InfServer.Script.GameType_Multi
 
         private Player _target;                     //The player we're currently stalking
         public Player _leader;
+        public Helpers.ObjectState _targetPoint;
         private Team _targetTeam;
         public BotType type;
         protected bool bOverriddenPoll;         //Do we have custom actions for poll?

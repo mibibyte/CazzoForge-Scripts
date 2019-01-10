@@ -154,6 +154,8 @@ namespace InfServer.Script.GameType_Multi
                     //If the item is still reserved, mark it
                     if (now - loot._tickCreation < Settings.c_unblockLoot)
                     Helpers.Player_RouteExplosion(targets, 1406, loot._item.positionX, loot._item.positionY, 0, 0, 0);
+
+                    _lastLootMarker = now;
                 }
             }
 

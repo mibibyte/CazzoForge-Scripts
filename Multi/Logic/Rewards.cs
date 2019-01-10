@@ -528,27 +528,27 @@ namespace InfServer.Script.GameType_Multi
             double result = 1;
             int playerLevel = 1;
 
-            if (points >= 50000)
-                playerLevel = 2;
             if (points >= 100000)
+                playerLevel = 2;
+            if (points >= 500000)
                 playerLevel = 3;
-            if (points >= 200000)
+            if (points >= 1000000)
                 playerLevel = 4;
-            if (points >= 400000)
+            if (points >= 2000000)
                 playerLevel = 5;
-            if (points >= 800000)
+            if (points >= 3000000)
                 playerLevel = 6;
-            if (points >= 1600000)
+            if (points >= 4000000)
                 playerLevel = 7;
-            if (points >= 3200000)
+            if (points >= 5000000)
                 playerLevel = 8;
-            if (points >= 6400000)
+            if (points >= 6000000)
                 playerLevel = 9;
-            if (points >= 12800000)
+            if (points >= 7000000)
                 playerLevel = 10;
 
 
-            result = Convert.ToDouble(((double)difficulty / playerLevel) / 3);
+            result = Convert.ToDouble(((double)difficulty / (playerLevel + 1)) / 3);
             return result;
         }
 
