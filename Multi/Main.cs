@@ -154,6 +154,8 @@ namespace InfServer.Script.GameType_Multi
                     //If the item is still reserved, mark it
                     if (now - loot._tickCreation < Settings.c_unblockLoot)
                     Helpers.Player_RouteExplosion(targets, 1406, loot._item.positionX, loot._item.positionY, 0, 0, 0);
+
+                    _lastLootMarker = now;
                 }
             }
 
@@ -957,8 +959,10 @@ namespace InfServer.Script.GameType_Multi
                         }
                     }
                     break;
-                case "Engineer":
-                    return tryEngineer(player, computer, product);
+                case "Engineer [Fortification]":
+                    return tryEngineerFort(player, computer, product);
+                case "Engineer [Vehicles]":
+                    return tryEngineerVehicle(player, computer, product);
                 case "Iron Refinery":
                     return tryIronRefinery(player, computer, product);
                 case "Helmet Trader":
@@ -1285,6 +1289,10 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.ModCommand")]
         public bool playerModcommand(Player player, Player recipient, string command, string payload)
         {
+            if (command.Equals("fort"))
+            {
+                Fortification newFort = new Fortification(FortificationType.Light, player._state.positionX, player._state.positionY, player._team, _arena);
+            }
 
             if (command.Equals("addbot"))
             {

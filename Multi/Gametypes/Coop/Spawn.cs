@@ -236,6 +236,14 @@ namespace InfServer.Script.GameType_Multi
                 Log.write(TLog.Warning, "Unable to spawn bot");
         }
 
+        public void spawnFort(FortificationType type)
+        {
+            _arena.sendArenaMessage("!Scouts are reporting enemy Fortification up ahead, keep a lookout!", 4);
+            Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(_botTeam, false);
+
+            Fortification newFort = new Fortification(type, warpPoint.positionX, warpPoint.positionY, _botTeam, _arena);
+        }
+
         public void checkForWaves(int now, int flagcount)
         {
             switch (flagcount)
@@ -266,7 +274,8 @@ namespace InfServer.Script.GameType_Multi
                             if (_botDifficulty >= 1)
                             {
                                 _arena.sendArenaMessage("!The enemy has sent a Light ExoSuit to stop you!", 4);
-                                spawnExoLight(_botTeam);                           
+                                spawnExoLight(_botTeam);
+                                spawnFort(FortificationType.Light);
                             }
 
                         }
@@ -410,6 +419,7 @@ namespace InfServer.Script.GameType_Multi
                             {
                                 _arena.sendArenaMessage("!The enemy has sent a Heavy ExoSuit to stop you!", 4);
                                 spawnExoHeavy(_botTeam);
+                                spawnFort(FortificationType.Light);
                             }
                             
                         }
@@ -466,6 +476,7 @@ namespace InfServer.Script.GameType_Multi
                                 spawnExoHeavy(_botTeam);
                                 spawnExoLight(_botTeam);
                                 spawnExoLight(_botTeam);
+                                spawnFort(FortificationType.Light);
                             }
 
                         }
@@ -517,7 +528,8 @@ namespace InfServer.Script.GameType_Multi
 
                             int max = Convert.ToInt32(playercount * 3);
                             spawnRandomWave(_botTeam, max);
-                            
+                            spawnFort(FortificationType.Light);
+
                         }
                     }
                     break;
