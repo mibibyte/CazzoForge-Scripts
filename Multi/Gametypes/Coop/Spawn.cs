@@ -246,6 +246,16 @@ namespace InfServer.Script.GameType_Multi
 
         public void checkForWaves(int now, int flagcount)
         {
+                        int playercount2 = _team.ActivePlayerCount; // Adjust bot difficulty by 1 for every player after 6.
+                        if (playercount2 > 6)
+                        {
+                            _botDifficultyPlayerModifier = playercount2 - 6;
+                        }
+                        else
+                        {
+                            _botDifficultyPlayerModifier = 0;
+                        }
+
             switch (flagcount)
             {
                 case 3:
@@ -254,7 +264,7 @@ namespace InfServer.Script.GameType_Multi
                         {
                             _firstLightExoWave = true;
 
-                            if (_botDifficulty >= 1)
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 1)
                             {
                                 _arena.sendArenaMessage("!The enemy has sent two Light ExoSuits to stop you!", 4);
                                 spawnExoLight(_botTeam);
@@ -265,13 +275,30 @@ namespace InfServer.Script.GameType_Multi
                     }
                     break;
 
+                case 4:
+                    {
+                        if (!_sixthDifficultyWave)
+                        {
+                            _sixthDifficultyWave = true;
+
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 21)
+                            {
+                                _arena.sendArenaMessage("!The enemy has sent a Heavy ExoSuit to stop you!", 4);
+                                spawnExoHeavy(_botTeam);
+                            }
+
+                        }
+                    }
+                    break;
+
+
                 case 6:
                     {
                         if (!_secondLightExoWave)
                         {
                             _secondLightExoWave = true;
 
-                            if (_botDifficulty >= 1)
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 1)
                             {
                                 _arena.sendArenaMessage("!The enemy has sent a Light ExoSuit to stop you!", 4);
                                 spawnExoLight(_botTeam);
@@ -288,7 +315,7 @@ namespace InfServer.Script.GameType_Multi
                         {
                             _firstDifficultyWave = true;
 
-                            if (_botDifficulty >= 9)
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 9)
                             {
                                 _arena.sendArenaMessage("!The enemy has sent a Heavy ExoSuit to stop you!", 4);
                                 spawnExoHeavy(_botTeam);
@@ -306,7 +333,7 @@ namespace InfServer.Script.GameType_Multi
 
                             _arena.sendArenaMessage("!The enemy has sent extra reinforcements in a last ditch attempt to stop you!", 4);
 
-                            if (_botDifficulty >= 1)
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 1)
                             {
                                 spawnExoLight(_botTeam);
                             }
@@ -329,10 +356,27 @@ namespace InfServer.Script.GameType_Multi
                         {
                             _secondDifficultyWave = true;
 
-                            if (_botDifficulty >= 3)
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 3)
                             {
                                 _arena.sendArenaMessage("!The enemy has sent a Heavy ExoSuit to stop you!", 4);
                                 spawnExoHeavy(_botTeam);
+                            }
+
+                        }
+                    }
+                    break;
+
+                case 11:
+                    {
+                        if (!_seventhDifficultyWave)
+                        {
+                            _seventhDifficultyWave = true;
+
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 22)
+                            {
+                                _arena.sendArenaMessage("!The enemy has sent a Light ExoSuit to stop you!", 4);
+                                spawnExoLight(_botTeam);
+                                spawnExoLight(_botTeam);
                             }
 
                         }
@@ -350,6 +394,23 @@ namespace InfServer.Script.GameType_Multi
                         }
                     }
                     break;
+                case 14:
+                    {
+                        if (!_thirteenthDifficultyWave)
+                        {
+                            _thirteenthDifficultyWave = true;
+
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 28)
+                            {
+                                _arena.sendArenaMessage("!The enemy has sent an ExoSuit Squad to stop you!", 4);
+                                spawnExoLight(_botTeam);
+                                spawnExoHeavy(_botTeam);
+                                spawnExoHeavy(_botTeam);
+                            }
+
+                        }
+                    }
+                    break;
 
                 case 15:
                     {
@@ -357,10 +418,26 @@ namespace InfServer.Script.GameType_Multi
                         {
                             _thirdDifficultyWave = true;
 
-                            if (_botDifficulty >= 6)
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 6)
                             {
                                 _arena.sendArenaMessage("!The enemy has sent a Light ExoSuit to stop you!", 4);
                                 spawnExoLight(_botTeam);
+                            }
+
+                        }
+                    }
+                    break;
+                case 16:
+                    {
+                        if (!_fifthteenthDifficultyWave)
+                        {
+                            _fifthteenthDifficultyWave = true;
+
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 30)
+                            {
+                                _arena.sendArenaMessage("!The enemy has sent a ExoSuit Squad to stop you!", 4);
+                                spawnExoHeavy(_botTeam);
+                                spawnExoHeavy(_botTeam);
                             }
 
                         }
@@ -393,7 +470,7 @@ namespace InfServer.Script.GameType_Multi
                             _arena.sendArenaMessage("!The enemy has sent some enhanced Soldiers, Look out!", 4);
                             spawnEliteHeavy(_botTeam);
                             spawnEliteMarine(_botTeam);
-                            if (_botDifficulty >= 1)
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 1)
                             {
                                 spawnExoHeavy(_botTeam);
                             }                           
@@ -408,6 +485,21 @@ namespace InfServer.Script.GameType_Multi
                         }
                     }
                     break;
+                case 20:
+                    {
+                        if (!_fourteenthDifficultyWave)
+                        {
+                            _fourteenthDifficultyWave = true;
+
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 29)
+                            {
+                                _arena.sendArenaMessage("!The enemy has sent a Light ExoSuit to stop you!", 4);
+                                spawnExoLight(_botTeam);
+                            }
+
+                        }
+                    }
+                    break;
 
                 case 21:
                     {
@@ -415,7 +507,7 @@ namespace InfServer.Script.GameType_Multi
                         {
                             _secondHeavyExoWave = true;
 
-                            if (_botDifficulty >= 1)
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 1)
                             {
                                 _arena.sendArenaMessage("!The enemy has sent a Heavy ExoSuit to stop you!", 4);
                                 spawnExoHeavy(_botTeam);
@@ -426,13 +518,30 @@ namespace InfServer.Script.GameType_Multi
                     }
                     break;
 
+                case 23:
+                    {
+                        if (!_eighthDifficultyWave)
+                        {
+                            _eighthDifficultyWave = true;
+
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 23)
+                            {
+                                _arena.sendArenaMessage("!The enemy has sent an ExoSuit Squad to stop you!", 4);
+                                spawnExoHeavy(_botTeam);
+                                spawnExoLight(_botTeam);
+                            }
+
+                        }
+                    }
+                    break;
+
                 case 24:
                     {
                         if (!_thirdLightExoWave)
                         {
                             _thirdLightExoWave = true;
 
-                            if (_botDifficulty >= 1)
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 1)
                             {
                                 _arena.sendArenaMessage("!The enemy has sent a Light ExoSuit to stop you!", 4);
                                 spawnExoLight(_botTeam);
@@ -464,13 +573,30 @@ namespace InfServer.Script.GameType_Multi
                     }
                     break;
 
+                case 27:
+                    {
+                        if (!_ninthDifficultyWave)
+                        {
+                            _ninthDifficultyWave = true;
+
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 24)
+                            {
+                                _arena.sendArenaMessage("!The enemy has sent an ExoSuit Squad to stop you!", 4);
+                                spawnExoHeavy(_botTeam);
+                                spawnExoLight(_botTeam);
+                            }
+
+                        }
+                    }
+                    break;
+
                 case 29:
                     {
                         if (!_fifthDifficultyWave)
                         {
                             _fifthDifficultyWave = true;
 
-                            if (_botDifficulty >= 15)
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 15)
                             {
                                 _arena.sendArenaMessage("!The enemy has sent an ExoSuit Squad to stop you!", 4);
                                 spawnExoHeavy(_botTeam);
@@ -483,6 +609,37 @@ namespace InfServer.Script.GameType_Multi
                     }
                     break;
 
+                case 30:
+                    {
+                        if (!_tenthDifficultyWave)
+                        {
+                            _tenthDifficultyWave = true;
+
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 25)
+                            {
+                                _arena.sendArenaMessage("!The enemy has sent an ExoSuit Squad to stop you!", 4);
+                                spawnExoLight(_botTeam);
+                                spawnExoLight(_botTeam);
+                            }
+
+                        }
+                    }
+                    break;
+                case 32:
+                    {
+                        if (!_eleventhDifficultyWave)
+                        {
+                            _eleventhDifficultyWave = true;
+
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 26)
+                            {
+                                _arena.sendArenaMessage("!The enemy has sent an ExoSuit Squad to stop you!", 4);
+                                spawnExoLight(_botTeam);
+                            }
+
+                        }
+                    }
+                    break;
                 case 33:
                     {
                         if (!_secondBoss)
@@ -492,7 +649,7 @@ namespace InfServer.Script.GameType_Multi
                             _arena.sendArenaMessage("!The enemy has sent some enhanced Soldiers, Look out!", 4);
                             spawnEliteHeavy(_botTeam);
                             spawnEliteMarine(_botTeam);
-                            if (_botDifficulty >= 1)
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 1)
                             {
                                 spawnExoLight(_botTeam);
                             }
@@ -517,7 +674,7 @@ namespace InfServer.Script.GameType_Multi
                             _arena.sendArenaMessage("!The enemy has sent extra reinforcements in a last ditch attempt to stop you!", 4);
                             spawnEliteHeavy(_botTeam);
                             spawnEliteMarine(_botTeam);
-                            if (_botDifficulty >= 1)
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 1)
                             {
                                 spawnExoHeavy(_botTeam);
                             }                           
@@ -540,9 +697,26 @@ namespace InfServer.Script.GameType_Multi
                         {
                             _thirdHeavyExoWave = true;
 
-                            if (_botDifficulty >= 1)
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 1)
                             {
                                 _arena.sendArenaMessage("!The enemy has sent a Heavy ExoSuit to stop you!", 4);
+                                spawnExoHeavy(_botTeam);
+                            }
+
+                        }
+                    }
+                    break;
+                case 37:
+                    {
+                        if (!_twelvthDifficultyWave)
+                        {
+                            _twelvthDifficultyWave = true;
+
+                            if ((_botDifficulty + _botDifficultyPlayerModifier) >= 27)
+                            {
+                                _arena.sendArenaMessage("!The enemy has sent an ExoSuit Squad to stop you!", 4);
+                                spawnExoLight(_botTeam);
+                                spawnExoHeavy(_botTeam);
                                 spawnExoHeavy(_botTeam);
                             }
 

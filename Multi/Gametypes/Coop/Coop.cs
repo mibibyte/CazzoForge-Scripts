@@ -179,7 +179,18 @@ namespace InfServer.Script.GameType_Multi
             _fourthDifficultyWave = false;
             _fifthDifficultyWave = false;
 
-        _lastSupplyDrop = Environment.TickCount;
+            _sixthDifficultyWave = false;
+            _seventhDifficultyWave = false;
+            _eighthDifficultyWave = false;
+            _ninthDifficultyWave = false;
+            _tenthDifficultyWave = false;
+            _eleventhDifficultyWave = false;
+            _twelvthDifficultyWave = false;
+            _thirteenthDifficultyWave = false;
+            _fourteenthDifficultyWave = false;
+            _fifthteenthDifficultyWave = false;
+
+            _lastSupplyDrop = Environment.TickCount;
             _lastHPChange = Environment.TickCount;
             hpMultiplier = 0.25;
 
