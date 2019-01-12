@@ -548,7 +548,7 @@ namespace InfServer.Script.GameType_Multi
                 playerLevel = 10;
 
 
-            result = Convert.ToDouble(((double)difficulty / (playerLevel + 1)) / 3);
+            result = Convert.ToDouble(((double)difficulty / (playerLevel + 1)) / 2);
             return result;
         }
 
