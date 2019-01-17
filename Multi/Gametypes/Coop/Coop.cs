@@ -326,6 +326,50 @@ namespace InfServer.Script.GameType_Multi
 
         #region Player Events
 
+        public bool playerPortal(Player player, LioInfo.Portal portal)
+        {
+            if (portal.GeneralData.Name.Contains("DS Portal"))
+            {
+                Helpers.ObjectState flagPoint;
+                Helpers.ObjectState warpPoint;
+
+                flagPoint = _baseScript.findFlagWarp(player, true);
+
+                if (flagPoint == null)
+                {
+                    Log.write(TLog.Normal, String.Format("Could not find suitable flag warp for {0}", player._alias));
+
+                    if (!_baseScript._lastSpawn.ContainsKey(player._alias))
+                    {
+                        player.sendMessage(-1, "Could not find suitable warp, warped to landing ship!");
+                        return true;
+                    }
+                    else
+                        warpPoint = _baseScript._lastSpawn[player._alias];
+                }
+                else
+                {
+                    warpPoint = _baseScript.findOpenWarp(player, _arena, flagPoint.positionX, 1744, _baseScript._playerWarpRadius);
+                }
+
+                if (warpPoint == null)
+                {
+                    Log.write(TLog.Normal, String.Format("Could not find open warp for {0} (Warp Blocked)", player._alias));
+                    player.sendMessage(-1, "Warp was blocked, please try again");
+                    return false;
+                }
+
+                _baseScript.warp(player, warpPoint);
+
+                if (_baseScript._lastSpawn.ContainsKey(player._alias))
+                    _baseScript._lastSpawn[player._alias] = warpPoint;
+                else
+                    _baseScript._lastSpawn.Add(player._alias, warpPoint);
+                return false;
+            }
+            return false;
+        }
+
         public void playerKillStreak(Player killer, int count)
         {
             switch (count)

@@ -213,47 +213,19 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.Portal")]
         public bool playerPortal(Player player, LioInfo.Portal portal)
         {
-            if (portal.GeneralData.Name.Contains("DS Portal"))
+            switch (_gameType)
             {
-                Helpers.ObjectState flagPoint;
-                Helpers.ObjectState warpPoint;
+                case Settings.GameTypes.Conquest:
+                    return _cq.playerPortal(player, portal);
 
-                if (_gameType == Settings.GameTypes.Coop)
-                    flagPoint = findFlagWarp(player, true);
-                else
-                    flagPoint = findFlagWarp(player, false);
+                case Settings.GameTypes.Coop:
+                    return _coop.playerPortal(player, portal);
+                case Settings.GameTypes.Royale:
+                    return _royale.playerPortal(player, portal);
 
-                if (flagPoint == null)
-                {
-                    Log.write(TLog.Normal, String.Format("Could not find suitable flag warp for {0}", player._alias));
-
-                    if (!_lastSpawn.ContainsKey(player._alias))
-                    {
-                        player.sendMessage(-1, "Could not find suitable warp, warped to landing ship!");
-                        return true;
-                    }
-                    else
-                        warpPoint = _lastSpawn[player._alias];
-                }
-                else
-                {
-                    warpPoint = findOpenWarp(player, _arena, flagPoint.positionX, 1744, _playerWarpRadius);
-                }
-
-                if (warpPoint == null)
-                {
-                    Log.write(TLog.Normal, String.Format("Could not find open warp for {0} (Warp Blocked)", player._alias));
-                    player.sendMessage(-1, "Warp was blocked, please try again");
-                    return false;
-                }
-
-                warp(player, warpPoint);
-
-                if (_lastSpawn.ContainsKey(player._alias))
-                    _lastSpawn[player._alias] = warpPoint;
-                else
-                    _lastSpawn.Add(player._alias, warpPoint);
-                return false;
+                default:
+                    //Do nothing
+                    break;
             }
             return false;
         }
@@ -1297,25 +1269,6 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.ChatCommand")]
         public bool playerChatCommand(Player player, Player recipient, string command, string payload)
         {
-            if (command.Equals("trigger"))
-            {
-
-                int id;
-                bool isNumeric = int.TryParse(payload, out id);
-
-                if (!isNumeric)
-                    return false;
-
-                player.triggerMessage((byte)id, 500, "Trigger message test");
-
-            }
-
-            if (command.Equals("state"))
-            {
-
-                player.sendMessage(0, String.Format("positionX={0} positionY={1} positionZ={2}",player._state.positionX, player._state.positionY, player._state.positionZ));
-
-            }
             return true;
         }
 

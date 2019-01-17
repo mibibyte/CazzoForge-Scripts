@@ -17,7 +17,7 @@ namespace InfServer.Script.GameType_Multi
 
     public partial class Script_Multi : Scripts.IScript
     {
-        private int _playerWarpRadius = 760;
+        public int _playerWarpRadius = 760;
         private int _engagedRadius = 1000;
         private int _maxEnemyRange = 2200;
         private int _flankerLogic = 3;
