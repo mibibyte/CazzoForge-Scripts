@@ -217,6 +217,7 @@ namespace InfServer.Script.GameType_Multi
             {
                 case Settings.GameTypes.Conquest:
                     return _cq.playerPortal(player, portal);
+
                 case Settings.GameTypes.Coop:
                     return _coop.playerPortal(player, portal);
                 case Settings.GameTypes.Royale:
