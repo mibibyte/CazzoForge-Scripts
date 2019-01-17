@@ -36,21 +36,22 @@ namespace InfServer.Script.GameType_Multi
 
 
         //Poll variables
-        private int _lastGameCheck;         //Tick at which we checked for game availability
-        private int _tickGameStarting;      //Tick at which the game began starting (0 == not initiated)
-        private int _tickGameStarted;       //Tick at which the game actually started (0 == stopped)
-        private int _tickLastMinorPoll;
-        private int _lastKillStreakUpdate;
-        private int _lastLootMarker;
+        public int _lastGameCheck;         //Tick at which we checked for game availability
+        public int _tickGameStarting;      //Tick at which the game began starting (0 == not initiated)
+        public int _tickGameStarted;       //Tick at which the game actually started (0 == stopped)
+        public int _tickLastMinorPoll;
+        public int _lastKillStreakUpdate;
+        public int _lastLootMarker;
 
         //Misc variables
-        private int _tickStartDelay;
-        private int _minPlayers;            //Do we have the # of min players to start a game?
-        private bool _bMiniMapsEnabled;
+        public int _tickStartDelay;
+        public int _minPlayers;            //Do we have the # of min players to start a game?
+        public bool _bMiniMapsEnabled;
         public Team _winner;
         private Player lastKiller;
         public List<SupplyDrop> _supplyDrops;
         private List<Player> _fakePlayers;
+        public int manualTeamSizePick;
 
         //Stats
         /// <summary>
@@ -63,6 +64,7 @@ namespace InfServer.Script.GameType_Multi
         /// </summary>
         private Conquest _cq;
         public Coop _coop;
+        public Royale _royale;
 
         #region Member Fucntions
         ///////////////////////////////////////////////////
@@ -81,6 +83,7 @@ namespace InfServer.Script.GameType_Multi
             //Load up our gametype handlers
             _cq = new Conquest(_arena, this);
             _coop = new Coop(_arena, this);
+            _royale = new Royale(_arena, this);
 
             //Load any modules
             _loot = new Loot(_arena, this);
@@ -99,8 +102,6 @@ namespace InfServer.Script.GameType_Multi
             {
                 _gameType = Settings.GameTypes.Coop;
             }
-                
-            
             else
             {
                 Team team1 = _arena.getTeamByName("Titan Militia");
@@ -113,6 +114,8 @@ namespace InfServer.Script.GameType_Multi
             _lastSpawn = new Dictionary<string, Helpers.ObjectState>();
             _bMiniMapsEnabled = true;
             _supplyDrops = new List<SupplyDrop>();
+            manualTeamSizePick = 0;
+
             return true;
         }
 
@@ -122,6 +125,7 @@ namespace InfServer.Script.GameType_Multi
         public bool poll()
         {	//Should we check game state yet?
             int now = Environment.TickCount;
+
 
             if (now - _lastGameCheck <= Arena.gameCheckInterval)
                 return true;
@@ -159,42 +163,6 @@ namespace InfServer.Script.GameType_Multi
                 }
             }
 
-            //Do we have enough players?
-            int playing = _arena.PlayerCount;
-            if (_arena._bGameRunning && playing < _minPlayers && _arena._bIsPublic)
-            {
-                bJackpot = false;
-                //Stop the game and reset voting
-                _arena.gameEnd();
-
-            }
-
-
-            if (playing < _minPlayers && _arena._bIsPublic)
-            {
-                _tickGameStarting = 0;
-                _arena.setTicker(1, 3, 0, "Not Enough Players");
-            }
-
-            if (playing < _minPlayers && !_arena._bIsPublic && !_arena._bGameRunning)
-            {
-                _tickGameStarting = 0;
-                _arena.setTicker(1, 3, 0, "Private arena, Waiting for arena owner to start the game!");
-            }
-
-            //Do we have enough to start a game?
-            if (!_arena._bGameRunning && _tickGameStarting == 0 && playing >= _minPlayers && _arena._bIsPublic)
-            {
-                _tickGameStarting = now;
-
-
-                _arena.setTicker(1, 3, _config.deathMatch.startDelay * 100, "Next game: ",
-                    delegate ()
-                    {   //Trigger the game start
-                        _arena.gameStart();
-                    });
-            }
-
             //Update each player's playseconds
             if (_arena._bGameRunning && now - _tickLastMinorPoll >= 1000)
             {
@@ -227,6 +195,9 @@ namespace InfServer.Script.GameType_Multi
                 case Settings.GameTypes.Coop:
                     _coop.Poll(now);
                     break;
+                case Settings.GameTypes.Royale:
+                    _royale.Poll(now);
+                    break;
 
                 default:
                     //Do nothing
@@ -242,47 +213,18 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.Portal")]
         public bool playerPortal(Player player, LioInfo.Portal portal)
         {
-            if (portal.GeneralData.Name.Contains("DS Portal"))
+            switch (_gameType)
             {
-                Helpers.ObjectState flagPoint;
-                Helpers.ObjectState warpPoint;
+                case Settings.GameTypes.Conquest:
+                    return _cq.playerPortal(player, portal);
+                case Settings.GameTypes.Coop:
+                    return _coop.playerPortal(player, portal);
+                case Settings.GameTypes.Royale:
+                    return _royale.playerPortal(player, portal);
 
-                if (_gameType == Settings.GameTypes.Coop)
-                    flagPoint = findFlagWarp(player, true);
-                else
-                    flagPoint = findFlagWarp(player, false);
-
-                if (flagPoint == null)
-                {
-                    Log.write(TLog.Normal, String.Format("Could not find suitable flag warp for {0}", player._alias));
-
-                    if (!_lastSpawn.ContainsKey(player._alias))
-                    {
-                        player.sendMessage(-1, "Could not find suitable warp, warped to landing ship!");
-                        return true;
-                    }
-                    else
-                        warpPoint = _lastSpawn[player._alias];
-                }
-                else
-                {
-                    warpPoint = findOpenWarp(player, _arena, flagPoint.positionX, 1744, _playerWarpRadius);
-                }
-
-                if (warpPoint == null)
-                {
-                    Log.write(TLog.Normal, String.Format("Could not find open warp for {0} (Warp Blocked)", player._alias));
-                    player.sendMessage(-1, "Warp was blocked, please try again");
-                    return false;
-                }
-
-                warp(player, warpPoint);
-
-                if (_lastSpawn.ContainsKey(player._alias))
-                    _lastSpawn[player._alias] = warpPoint;
-                else
-                    _lastSpawn.Add(player._alias, warpPoint);
-                return false;
+                default:
+                    //Do nothing
+                    break;
             }
             return false;
         }
@@ -337,6 +279,9 @@ namespace InfServer.Script.GameType_Multi
                 case Settings.GameTypes.Coop:
                     _coop.playerExplosion(player, weapon, posX, posY, posZ);
                     break;
+                case Settings.GameTypes.Royale:
+                    //_royale.playerExplosion(player, weapon, posX, posY, posZ);
+                    break;
 
                 default:
                     //Do nothing
@@ -368,6 +313,9 @@ namespace InfServer.Script.GameType_Multi
                     break;
                 case Settings.GameTypes.Coop:
                     handler = _coop.playerUnspec(player);
+                    break;
+                case Settings.GameTypes.Royale:
+                    handler = _royale.playerJoinGame(player);
                     break;
 
                 default:
@@ -405,6 +353,9 @@ namespace InfServer.Script.GameType_Multi
                     break;
                 case Settings.GameTypes.Coop:
                     _coop.playerSpec(player);
+                    break;
+                case Settings.GameTypes.Royale:
+                    _royale.playerLeave(player);
                     break;
 
 
@@ -470,6 +421,9 @@ namespace InfServer.Script.GameType_Multi
                 case Settings.GameTypes.Coop:
                     _coop.playerEnterArena(player);
                     break;
+                case Settings.GameTypes.Royale:
+                    _royale.playerEnterArena(player);
+                    break;
 
                 default:
                     //Do nothing
@@ -491,6 +445,9 @@ namespace InfServer.Script.GameType_Multi
                     break;
                 case Settings.GameTypes.Coop:
                     _coop.playerLeaveArena(player);
+                    break;
+                case Settings.GameTypes.Royale:
+                    _royale.playerLeaveArena(player);
                     break;
 
 
@@ -514,6 +471,9 @@ namespace InfServer.Script.GameType_Multi
                     break;
                 case Settings.GameTypes.Coop:
                     _coop.playerSpawn(player, death);
+                    break;
+                case Settings.GameTypes.Royale:
+                    _royale.playerSpawn(player, death);
                     break;
 
                 default:
@@ -557,6 +517,10 @@ namespace InfServer.Script.GameType_Multi
                 case Settings.GameTypes.Coop:
                     _coop.gameStart();
                     break;
+                case Settings.GameTypes.Royale:
+                    _royale.gameStart();
+                    break;
+
 
                 default:
                     //Do nothing
@@ -589,6 +553,9 @@ namespace InfServer.Script.GameType_Multi
                     break;
                 case Settings.GameTypes.Coop:
                     _coop.gameEnd();
+                    break;
+                case Settings.GameTypes.Royale:
+                    _royale.gameEnd();
                     break;
 
 
@@ -702,6 +669,9 @@ namespace InfServer.Script.GameType_Multi
                 case Settings.GameTypes.Coop:
                     _coop.gameReset();
                     break;
+                case Settings.GameTypes.Royale:
+                    _royale.gameReset();
+                    break;
 
                 default:
                     //Do nothing
@@ -752,6 +722,15 @@ namespace InfServer.Script.GameType_Multi
 
             //Remove the item from player's clients
             Helpers.Object_ItemDropUpdate(_arena.Players, drop.id, (ushort)drop.quantity);
+
+            if (drop.item.name.EndsWith("(Loot)"))
+            {
+                ItemInfo.MultiItem multi = (ItemInfo.MultiItem)drop.item;
+
+                //Ammo stuffs
+                player.inventoryModify(multi.slots[1].value, 150);
+
+            }
             return false;
         }
 
@@ -789,6 +768,9 @@ namespace InfServer.Script.GameType_Multi
                     break;
                 case Settings.GameTypes.Coop:
                     _coop.individualBreakdown(from, bCurrent);
+                    break;
+                case Settings.GameTypes.Royale:
+                    _royale.playerBreakdown(from, bCurrent);
                     break;
 
                 default:
@@ -987,6 +969,9 @@ namespace InfServer.Script.GameType_Multi
                 case Settings.GameTypes.Coop:
                     _coop.playerDeath(victim, killer, killType, update);
                     break;
+                case Settings.GameTypes.Royale:
+                    _royale.playerDeath(victim, killer, killType, update);
+                    break;
                 default:
                     //Do nothing
                     break;
@@ -1049,6 +1034,9 @@ namespace InfServer.Script.GameType_Multi
                     break;
                 case Settings.GameTypes.Coop:
                     _coop.playerPlayerKill(victim, killer);
+                    break;
+                case Settings.GameTypes.Royale:
+                    _royale.playerPlayerKill(victim, killer);
                     break;
 
                 default:
@@ -1185,19 +1173,12 @@ namespace InfServer.Script.GameType_Multi
             //Defer to our current gametype handler!
 
             if ((skill.SkillId >= 0) && (skill.SkillId < 100)) // they trying to pick  class
-            {
-                for (int i = 0; i < 100; i++) // we gotta remove any class skills that already got
-                {
-                    if (from.findSkill(i) != null)
-                        from._skills.Remove(i);
-                }
-            }
-
+                from.resetSkills();
 
             switch (_gameType)
             {
                 case Settings.GameTypes.Conquest:
-                   // _cq.PlayerRepair(from, item);
+                    // _cq.PlayerRepair(from, item);
                     break;
 
                 default:
@@ -1237,6 +1218,32 @@ namespace InfServer.Script.GameType_Multi
                 case Settings.GameTypes.Coop:
                     _coop.PlayerRepair(player, item);
                     break;
+                case Settings.GameTypes.Royale:
+                    _royale.PlayerRepair(player, item);
+                    break;
+
+                default:
+                    //Do nothing
+                    break;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Triggered when a vehicle dies
+        /// </summary>
+        [Scripts.Event("Vehicle.Death")]
+        public bool vehicleDeath(Vehicle dead, Player killer)
+        {
+            switch (_gameType)
+            {
+                case Settings.GameTypes.Conquest:
+                    break;
+                case Settings.GameTypes.Coop:
+                    break;
+                case Settings.GameTypes.Royale:
+                    _royale.vehicleDeath(dead, killer);
+                    break;
 
                 default:
                     //Do nothing
@@ -1261,25 +1268,6 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.ChatCommand")]
         public bool playerChatCommand(Player player, Player recipient, string command, string payload)
         {
-            if (command.Equals("trigger"))
-            {
-
-                int id;
-                bool isNumeric = int.TryParse(payload, out id);
-
-                if (!isNumeric)
-                    return false;
-
-                player.triggerMessage((byte)id, 500, "Trigger message test");
-
-            }
-
-            if (command.Equals("state"))
-            {
-
-                player.sendMessage(0, String.Format("positionX={0} positionY={1} positionZ={2}",player._state.positionX, player._state.positionY, player._state.positionZ));
-
-            }
             return true;
         }
 
@@ -1294,16 +1282,63 @@ namespace InfServer.Script.GameType_Multi
                 Fortification newFort = new Fortification(FortificationType.Light, player._state.positionX, player._state.positionY, player._team, _arena);
             }
 
+            if (command.Equals("royaleclassic"))
+            {
+                if (String.IsNullOrEmpty(payload))
+                    return false;
+
+                if (_arena._name.StartsWith("[Co-Op]"))
+                    return false;
+
+
+                if (String.IsNullOrEmpty(payload))
+                {
+                    player.sendMessage(0, String.Format("Classic Royale Mode is {0}", ((_royale.bClassic) ? "enabled" : "disabled")));
+                    return false;
+                }
+
+                if (payload.Equals("off"))
+                {
+                    _royale.bClassic = false;
+                    _arena.sendArenaMessage("Classic mode has been disabled");
+                    return false;
+                }
+
+                if (payload.Equals("on"))
+                {
+                    _royale.bClassic = true;
+                    _arena.sendArenaMessage("Classic mode has been enabled");
+                    return false;
+                }
+                return false;
+            }
+
+            if (command.Equals("gametype"))
+            {
+                if (String.IsNullOrEmpty(payload))
+                    return false;
+
+                if (_arena._name.StartsWith("[Co-Op]"))
+                    return false;
+
+                if (payload.ToLower().Equals("conquest"))
+                {
+                    _gameType = Settings.GameTypes.Conquest;
+                    _arena.gameEnd();
+                    return false;
+                }
+                if (payload.ToLower().Equals("royale"))
+                {
+                    _gameType = Settings.GameTypes.Royale;
+                    _arena.gameEnd();
+                    return false;
+                }
+            }
+
             if (command.Equals("addbot"))
             {
                 if (String.IsNullOrEmpty(payload))
                 {
-                    return false;
-                }
-
-                if (payload.Equals("elitemarine"))
-                {
-                    _coop.spawnEliteMarine(player, _coop._botTeam);
                     return false;
                 }
                 if (payload.Equals("exolight"))
@@ -1314,11 +1349,6 @@ namespace InfServer.Script.GameType_Multi
                 if (payload.Equals("exoheavy"))
                 {
                     _coop.spawnExoHeavy(_coop._botTeam);
-                    return false;
-                }
-                if (payload.Equals("eliteheavy"))
-                {
-                    _coop.spawnEliteHeavy(player, _coop._botTeam);
                     return false;
                 }
             }
@@ -1808,10 +1838,18 @@ namespace InfServer.Script.GameType_Multi
                     break;
             }
         }
-    
-    #endregion
 
-    #region Custom Calls
+        #endregion
+
+        #region Custom Calls
+
+        public void AllowPrivateTeams(bool bAllow)
+        {
+            _arena._server._zoneConfig.arena.allowManualTeamSwitch = bAllow;
+            _arena._server._zoneConfig.arena.allowPrivateFrequencies = bAllow;
+            _arena.sendArenaMessage(String.Format("Private Teams/Team switching is now {0}", ((bAllow) ? "enabled" : "disabled")));
+        }
+
 
     public void spawnSupplyDrop(Team team, short posX, short posY)
         {

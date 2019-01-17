@@ -125,6 +125,12 @@ namespace InfServer.Script.GameType_Multi
                     Helpers.Player_RouteExplosion(_arena.Players, 3059, posX, posY, 0, 0, 0);
                     tickLastWave = now;
                 }
+                
+                if (tickStartCapture != 0 && attackers > 0)
+                {
+                    int quickCaptureMod = ((attackers - 1) * 1000);
+                    tickStartCapture -= quickCaptureMod;
+                }
 
                 if (tickStartCapture != 0 && now - tickStartCapture >= 10000)
                 {

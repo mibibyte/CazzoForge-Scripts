@@ -17,7 +17,7 @@ namespace InfServer.Script.GameType_Multi
 
     public partial class Script_Multi : Scripts.IScript
     {
-        private int _playerWarpRadius = 760;
+        public int _playerWarpRadius = 760;
         private int _engagedRadius = 1000;
         private int _maxEnemyRange = 2200;
         private int _flankerLogic = 3;
@@ -40,9 +40,14 @@ namespace InfServer.Script.GameType_Multi
             if (count == 0)
                 return null;
 
+            int index = sortedFlags.IndexOf(sortedFlags.Last());
+
+            if (index != 0)
+                index--;
+
             warpPoint = new Helpers.ObjectState();
-            warpPoint.positionX = sortedFlags.First().posX;
-            warpPoint.positionY = sortedFlags.First().posY;
+            warpPoint.positionX = sortedFlags[index].posX;
+            warpPoint.positionY = sortedFlags[index].posY;
 
             List<Player> enemies = new List<Player>();
             enemies = _arena.getPlayersInRange(sortedFlags.Last().posX, sortedFlags.Last().posY, _engagedRadius).Where(p => p._team != player._team).ToList();
@@ -56,7 +61,7 @@ namespace InfServer.Script.GameType_Multi
                     warpPoint.positionX = (short)(sortedFlags.First().posX + ScaleOffset());
             }
 
-            if (bCoop && sortedFlags.Last().flag.GeneralData.Name != "Titan Home" && botCount > 0)
+            if (bCoop && sortedFlags.Last().flag.GeneralData.Name != "Titan Home")
             {
                 if (player._team._name == "Titan Militia")
                     warpPoint.positionX = (short)(sortedFlags.First().posX - 1000);

@@ -29,6 +29,7 @@ namespace InfServer.Script.GameType_Multi
         private List<CapturePoint> _activePoints;
         private List<CapturePoint> _allPoints;
         private int _lastFlagCheck;
+        private int _minPlayers = 1;
         public Script_Multi _baseScript;
 
         private int _flagCaptureRadius = 250;
@@ -82,6 +83,37 @@ namespace InfServer.Script.GameType_Multi
             {
                 UpdateTickers();
                 _lastTickerUpdate = now;
+            }
+
+            int playing = _arena.PlayerCount;
+            if (_arena._bGameRunning && playing < _minPlayers && _arena._bIsPublic)
+            {
+                _baseScript.bJackpot = false;
+                //Stop the game and reset voting
+                _arena.gameEnd();
+
+            }
+            if (playing < _minPlayers && _arena._bIsPublic)
+            {
+                _baseScript._tickGameStarting = 0;
+                _arena.setTicker(1, 3, 0, "Not Enough Players");
+            }
+
+            if (playing < _minPlayers && !_arena._bIsPublic && !_arena._bGameRunning)
+            {
+                _baseScript._tickGameStarting = 0;
+                _arena.setTicker(1, 3, 0, "Private arena, Waiting for arena owner to start the game!");
+            }
+
+            //Do we have enough to start a game?
+            if (!_arena._bGameRunning && _baseScript._tickGameStarting == 0 && playing >= _minPlayers && _arena._bIsPublic)
+            {
+                _baseScript._tickGameStarting = now;
+                _arena.setTicker(1, 3, _config.deathMatch.startDelay * 100, "Next game: ",
+                    delegate ()
+                    {   //Trigger the game start
+                        _arena.gameStart();
+                    });
             }
 
 
@@ -269,6 +301,50 @@ namespace InfServer.Script.GameType_Multi
         #endregion
 
         #region Player Events
+
+        public bool playerPortal(Player player, LioInfo.Portal portal)
+        {
+            if (portal.GeneralData.Name.Contains("DS Portal"))
+            {
+                Helpers.ObjectState flagPoint;
+                Helpers.ObjectState warpPoint;
+
+                flagPoint = _baseScript.findFlagWarp(player, false);
+
+                if (flagPoint == null)
+                {
+                    Log.write(TLog.Normal, String.Format("Could not find suitable flag warp for {0}", player._alias));
+
+                    if (!_baseScript._lastSpawn.ContainsKey(player._alias))
+                    {
+                        player.sendMessage(-1, "Could not find suitable warp, warped to landing ship!");
+                        return true;
+                    }
+                    else
+                        warpPoint = _baseScript._lastSpawn[player._alias];
+                }
+                else
+                {
+                    warpPoint = _baseScript.findOpenWarp(player, _arena, flagPoint.positionX, 1744, _baseScript._playerWarpRadius);
+                }
+
+                if (warpPoint == null)
+                {
+                    Log.write(TLog.Normal, String.Format("Could not find open warp for {0} (Warp Blocked)", player._alias));
+                    player.sendMessage(-1, "Warp was blocked, please try again");
+                    return false;
+                }
+
+                _baseScript.warp(player, warpPoint);
+
+                if (_baseScript._lastSpawn.ContainsKey(player._alias))
+                    _baseScript._lastSpawn[player._alias] = warpPoint;
+                else
+                    _baseScript._lastSpawn.Add(player._alias, warpPoint);
+                return false;
+            }
+            return false;
+        }
 
         /// <summary>
         /// Called when a players killstreak is updated

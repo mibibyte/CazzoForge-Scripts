@@ -21,6 +21,7 @@ namespace InfServer.Script.GameType_Multi
     public class Stats
     { 
         public Player player { get; set; }
+        public Team team { get; set; }
         public string teamname { get; set; }
         public string alias { get; set; }
         public long points { get; set; }
