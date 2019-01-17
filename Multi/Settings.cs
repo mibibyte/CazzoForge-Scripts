@@ -62,7 +62,8 @@ namespace InfServer.Script.GameType_Multi
         {
             NULL,
             Conquest,
-            Coop
+            Coop,
+            Royale
         }
     }
 }

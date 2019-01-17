@@ -102,6 +102,10 @@ namespace InfServer.Script.GameType_Multi
                 if (_arena.getTerrain(p._state.positionX, p._state.positionY).safety)
                     continue;
 
+                int distance = (int)(_state.position().Distance(p._state.position()) * 100);
+                if (p.activeUtilities.Any(util => util != null && distance >= util.cloakDistance && util.cloakDistance != -1))
+                    continue;
+
                 double dist = Helpers.distanceSquaredTo(_state, p._state);
                 bool bClearPath = Helpers.calcBresenhemsPredicate(_arena, _state.positionX, _state.positionY, p._state.positionX, p._state.positionY,
                     delegate (LvlInfo.Tile t)
