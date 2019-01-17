@@ -23,14 +23,6 @@ namespace InfServer.Script.GameType_Multi
 
         public void pollBots(int now)
         {
-            /*  if (spawnBots && _arena._bGameRunning && now - _lastHPChange >= 120000)  
-              {
-                  _lastHPChange = now;
-                  hpMultiplier = hpMultiplier + 0.07;
-
-                  _arena.sendArenaMessage("$The enemy is starting to increase their armor, Stay sharp!", 5);
-              } */
-
             if (_bots == null)
                 _bots = new List<Bot>();
 
@@ -325,13 +317,6 @@ namespace InfServer.Script.GameType_Multi
                                 vehid = 151;
                         }
 
-                        //Let's do 10% of marine being a Veteran Marine (more HP, diff visual look). Difficulty will up the % later.
-                        /*Random randVetMarine = new Random(); 
-                        bool bVetMarine = (randVetMarine.Next(1, 10) <= (_botDifficulty + _botDifficultyPlayerModifier));
-
-                        if (bVetMarine)
-                            vehid = 151;
-                            */
                         Marine marine = _arena.newBot(typeof(Marine), vehid, team, null, state, null) as Marine;
 
                         if (marine == null)
@@ -340,10 +325,6 @@ namespace InfServer.Script.GameType_Multi
                         marine._team = team;
                         marine.type = BotType.Marine;
                         marine.init();
-
-                       // if (hpMultiplier != 0.0)
-                        //    marine._state.health = Convert.ToInt16(marine._type.Hitpoints + (marine._type.Hitpoints * hpMultiplier));
-
                         marine.Destroyed += delegate (Vehicle bot)
                         {
                             _bots.Remove((Bot)bot);
@@ -401,10 +382,6 @@ namespace InfServer.Script.GameType_Multi
                         ripper._team = team;
                         ripper.type = BotType.Ripper;
                         ripper.init();
-
-                        //if (hpMultiplier != 0.0)
-                        //    ripper._state.health = Convert.ToInt16(ripper._type.Hitpoints + (ripper._type.Hitpoints * hpMultiplier));
-
                         ripper.Destroyed += delegate (Vehicle bot)
                         {
                             _bots.Remove((Bot)bot);

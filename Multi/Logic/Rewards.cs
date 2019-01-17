@@ -88,6 +88,16 @@ namespace InfServer.Script.GameType_Multi
                     pointsPerSecondLoser = Settings.c_jackpot_Co_LoserPointsPerSecond;
                     pointsPerHP = Settings.c_jackpot_Co_PointsPerHP;
                     break;
+
+                case Settings.GameTypes.Royale:
+                    fixedjackpot = Settings.c_jackpot_CQ_Fixed;
+                    pointsPerKill = Settings.c_jackpot_CQ_PointsPerKill;
+                    pointsPerDeath = Settings.c_jackpot_CQ_PointsPerDeath;
+                    pointsPerFlag = Settings.c_jackpot_CQ_PointsPerFlag;
+                    pointsPerSecondWinner = Settings.c_jackpot_CQ_WinnerPointsPerSecond;
+                    pointsPerSecondLoser = Settings.c_jackpot_CQ_LoserPointsPerSecond;
+                    pointsPerHP = Settings.c_jackpot_CQ_PointsPerHP;
+                    break;
             }
 
             //Set our fixed
@@ -548,7 +558,7 @@ namespace InfServer.Script.GameType_Multi
                 playerLevel = 10;
 
 
-            result = Convert.ToDouble(((double)difficulty / (playerLevel + 1)) / 2);
+            result = Convert.ToDouble(((double)difficulty / (playerLevel + 1)) / 3);
             return result;
         }
 

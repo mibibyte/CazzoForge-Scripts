@@ -23,6 +23,7 @@ namespace InfServer.Script.GameType_Multi
         private Arena _arena;					//Pointer to our arena class
         private CfgInfo _config;                //The zone config
         public Script_Multi _baseScript;
+        private Random _rand;
 
 
         private Team _victoryTeam;				//The team currently winning!
@@ -30,36 +31,28 @@ namespace InfServer.Script.GameType_Multi
         private int _lastGameCheck;				//The tick at which we last checked for game viability
         private int _tickGameStarting;			//The tick at which the game began starting (0 == not initiated)
         private int _tickGameStart;				//The tick at which the game started (0 == stopped)
+        private int _tickLastShrink;
+
+        private List<Team> _activeTeams;
+
         //Settings
-        private int _minPlayers;				//The minimum amount of players
-        private bool _firstGame = true;
+        public bool bClassic;
+        private int _minPlayers = 2;				//The minimum amount of players
+        private int _gameCount = 0;
+        private int _playersPerTeam = 1;
+        private ItemInfo.RepairItem oobEffect = AssetManager.Manager.getItemByID(172) as ItemInfo.RepairItem;
+        private int manualTeamSizePick;
 
-        private class PlayerCrownStatus
-        {
-            public bool crown;                  //Player has crown?
-            public int crownKills;              //Crown kills without a crown
-            public int crownDeaths;             //Times died with a crown (counted until they lose it)
-            public int expireTime;              //When the crown will expire
-            public PlayerCrownStatus(bool bCrown)
-            {
-                crown = bCrown;
-            }
-            public PlayerCrownStatus()
-            {
-                crown = true;
-            }
-        }
-        private Dictionary<Player, PlayerCrownStatus> _playerCrownStatus;
-        private List<Player> _activeCrowns //List of people with a crown
-        {
-            get { return _playerCrownStatus.Where(p => p.Value.crown).Select(p => p.Key).ToList(); }
-        }
-        private List<Player> _noCrowns //List of people with no crowns
-        {
-            get { return _playerCrownStatus.Where(p => !p.Value.crown).Select(p => p.Key).ToList(); }
-        }
+        private Boundary _storm;
+        private Team _red;
+        private Team _blue;
+        private SkillInfo _classSkill = AssetManager.Manager.getSkillByID(38);
 
-        private List<Team> _crownTeams;
+        public class Position
+        {
+            public short positionX;
+            public short positionY;
+        }
 
         ///////////////////////////////////////////////////
         // Member Functions
@@ -73,78 +66,62 @@ namespace InfServer.Script.GameType_Multi
             _arena = arena;
             _config = arena._server._zoneConfig;
 
-            _playerCrownStatus = new Dictionary<Player, PlayerCrownStatus>();
-            _crownTeams = new List<Team>();
+            _storm = new Boundary(_arena, 0, 0, 0, 0);
+            _red = _arena.getTeamByName("Red");
+            _blue = _arena.getTeamByName("Blue");
+            _rand = new Random();
+            _activeTeams = new List<Team>();
+            manualTeamSizePick = 0;
+            bClassic = true;
         }
 
         /// <summary>
         /// Allows the script to maintain itself
         /// </summary>
-        public bool poll()
+        public bool Poll(int now)
         {	//Should we check game state yet?
-            int now = Environment.TickCount;
             // List<Player> crowns = _activeCrowns;
 
             if (now - _lastGameCheck <= Arena.gameCheckInterval)
                 return true;
+
             _lastGameCheck = now;
 
             //Do we have enough players ingame?
             int playing = _arena.PlayerCount;
 
-            //Check for people that are expiring
-            if (_tickGameStart > 0)
+            if (_arena._bGameRunning)
             {
-                foreach (var p in _playerCrownStatus)
+                if (now - _tickLastShrink >= 30000)
                 {
-                    if ((now > p.Value.expireTime || _victoryTeam != null) && p.Value.crown)
-                    {
-                        p.Value.crown = false;
-                        Helpers.Player_Crowns(_arena, true, _activeCrowns);
-                        Helpers.Player_Crowns(_arena, false, _noCrowns);
-                    }
+                    short shrinkAmount = (short)((_storm.Width + _storm.Height) * 0.15);
+
+                    if (_storm.Width < _storm.Height) 
+                        _storm.Shrink(shrinkAmount, true);
+                    else 
+                        _storm.Shrink(shrinkAmount, false);
+
+                    _tickLastShrink = now;
+
+                    _arena.setTicker(1, 3, 30 * 100, "Play area shrinking in: ");
                 }
+                _storm.Poll(now);
 
-                //Get a list of teams with crowns and see if there is only one team
-                _crownTeams.Clear();
-
-                foreach (Player p in _activeCrowns)
-                    if (!_crownTeams.Contains(p._team))
-                        _crownTeams.Add(p._team);
-
-                if (_crownTeams.Count == 1)
+                foreach (Player player in _arena.PlayersIngame)
                 {
-                    _victoryTeam = _activeCrowns.First()._team;
-                    _arena.sendArenaMessage(_victoryTeam._name + " is the winner");
-                    gameVictory(_victoryTeam);
-                    return true;
-                }
-            }
+                    if (player._team._name == "Red" || player._team._name == "Blue")
+                        continue;
 
-            //Check for a winner
-            if (_tickGameStart > 0 && _activeCrowns.Count <= 1)
-            {
-                if (_activeCrowns.Count == 1)
-                {
-                    _victoryTeam = _activeCrowns.First()._team;
-                    if (_victoryTeam != null && !_victoryTeam.IsSpec) //Check for team activity
-                    {
-                        //End the game
-                        _arena.sendArenaMessage(_victoryTeam._name + " is the winner");
-                        gameVictory(_victoryTeam);
-                        return true;
-                    }
+                    if (!player.inArea(_storm._left, _storm._top, _storm._right, _storm._bottom) && now - _baseScript._tickGameStarted >= 5000)
+                            player.heal(oobEffect, player);
                 }
-                else //still bugged, no winner
-                {//All our crowners expired at the same time
-                    _arena.sendArenaMessage("There was no winner");
-                    gameReset();
-                }
-                return true;
+                
+                //Check win conditions
+                checkForwinner();
             }
 
             //Update our tickers
-            if (_tickGameStart > 0 && now - _arena._tickGameStarted > 2000)
+            if (_baseScript._tickGameStarted > 0 && now - _arena._tickGameStarted > 2000)
             {
                 if (now - _tickGameLastTickerUpdate > 1000)
                 {
@@ -153,164 +130,231 @@ namespace InfServer.Script.GameType_Multi
                 }
             }
 
-            //Do we have enough players to start a game?
-            if ((_tickGameStart == 0 || _tickGameStarting == 0) && playing < _minPlayers)
-            {	//Stop the game!
-                _arena.setTicker(1, 1, 0, "Not Enough Players");
-                _arena.gameReset();
+            if (_arena._bGameRunning && playing < _minPlayers && _arena._bIsPublic && _victoryTeam == null)
+            {
+                _baseScript.bJackpot = false;
+                //Stop the game and reset voting
+                _arena.gameEnd();
+
+            }
+            if (playing < _minPlayers && _arena._bIsPublic)
+            {
+                _baseScript._tickGameStarting = 0;
+                _arena.setTicker(1, 3, 0, "Not Enough Players");
             }
 
-            //Do we have enough players to start a game?
-            else if (_tickGameStart == 0 && _tickGameStarting == 0 && playing >= _minPlayers)
-            {	//Great! Get going
-                _tickGameStarting = now;
-                _arena.setTicker(1, 1, _config.king.startDelay * 100, "Next game: ",
+            if (playing < _minPlayers && !_arena._bIsPublic && !_arena._bGameRunning)
+            {
+                _baseScript._tickGameStarting = 0;
+                _arena.setTicker(1, 3, 0, "Private arena, Waiting for arena owner to start the game!");
+            }
+
+            //Do we have enough to start a game?
+            if (!_arena._bGameRunning && _baseScript._tickGameStarting == 0 && playing >= _minPlayers && _arena._bIsPublic)
+            {
+                _baseScript._tickGameStarting = now;
+
+                gameSetup();
+
+                _arena.setTicker(1, 3, 45 * 100, "Next game: ",
                     delegate ()
-                    {	//Trigger the game start
+                    {   //Trigger the game start
                         _arena.gameStart();
-                    }
-                );
+                    });
             }
             return true;
         }
 
-        /// <summary>
-        /// Called when the specified team have won
-        /// </summary>
-        public void gameVictory(Team victors)
-        {	//Let everyone know          
+        public void gameSetup()
+        {
+            if (_arena.PlayerCount >= 2)
+                _playersPerTeam = 1;
+            if (_arena.PlayerCount >= 4)
+                _playersPerTeam = 2;
+            else if (_arena.PlayerCount >= 6)
+                _playersPerTeam = 2;
+            else if (_arena.PlayerCount >= 12)
+                _playersPerTeam = 3;
+            else if (_arena.PlayerCount >= 16)
+                _playersPerTeam = 4;
+            else if (_arena.PlayerCount >= 20)
+                _playersPerTeam = 5;
 
-            //TODO: Move this calculation to breakdown() in ScriptArena?
-            //Calculate the jackpot for each player
-            int playersInGame = _arena.PlayersIngame.Count() * 2; //Math given by cfg help info
 
-            //Are we giving it to the whole team?
-            foreach (Player p in victors.AllPlayers)
-            {	//Spectating? 
-                if (p.IsSpectator)
-                    continue;
+            foreach (Player player in _arena.PlayersIngame)
+                if (player._team._name == "Red" || player._team._name == "Blue")
+                    pickTeam(player);
 
-                //Obtain the respective rewards
-                int cashReward = playersInGame * _config.king.cashReward / 1000;
-                int experienceReward = playersInGame * _config.king.experienceReward / 1000;
-                int pointReward = playersInGame * _config.king.pointReward / 1000;
-
-                p.sendMessage(0, String.Format("Your Personal Reward: Points={0} Cash={1} Experience={2}", pointReward, cashReward, experienceReward));
-
-                //Prize winning team
-                p.Cash += cashReward;
-                p.Experience += experienceReward;
-                p.BonusPoints += pointReward;
-            }
-            _victoryTeam = null;
-
-            //Set off some fireworks using the .lio file to specify locations based on name (starts with 'firework' in name)
-            /*
-                foreach (LioInfo.Hide firework in _arena._server._assets.Lios.Hides.Where(h => h.GeneralData.Name.ToLower().Contains("firework")))
-                    Helpers.Player_RouteExplosion(_arena.Players, (short)firework.HideData.HideId, firework.GeneralData.OffsetX, firework.GeneralData.OffsetY, 0, 0);
-            */
-            try
+            if (_gameCount >= 3)
             {
+                _arena.sendArenaMessage("Teams have been scrambled");
+                _arena.scrambleTeams(_arena.PlayersIngame.Where(p => !p._team._isPrivate),
+                    _arena.Teams.Where(team => team.IsPublic && team._name != "spec"
+                    && team._name.StartsWith("Public")).ToList(), _playersPerTeam);
+
+                _gameCount = 0;
+            }
+
+            _arena.sendArenaMessage(String.Format("A new Royale game is starting soon, " +
+                "Players have 45 seconds to assemble/alter their teams. " +
+                "Teams will be locked when the game begins. Max team size for this game: {0}", _playersPerTeam));
+
+            _baseScript.AllowPrivateTeams(true);
+        }
+
+        public void checkForwinner()
+        {
+            List<Team> removes = _activeTeams.Where(t => t.ActivePlayerCount == 0).ToList();
+
+            foreach (Team team in removes)
+                if (_activeTeams.Contains(team))
+                    _activeTeams.Remove(team);
+
+            int teamCount = _activeTeams.Count;
+
+            if (teamCount == 1)
+            {
+                _victoryTeam = _activeTeams.First();
+                _baseScript._winner = _victoryTeam;
+
+                if (_victoryTeam == null)
+                    _arena.sendArenaMessage("There was no winner");
+                else
+                    _arena.sendArenaMessage(String.Format("{0} has won!", _victoryTeam._name));
+
+
+                _baseScript.bJackpot = true;
                 _arena.gameEnd();
             }
-            catch (Exception e)
-            {
-                Log.write(TLog.Warning, "Game end exception :: " + e);
-            }
         }
-
-        public void giveCrown(Player p)
-        {//Give the player a crown and inform the arena
-            var v = _playerCrownStatus[p];
-            v.crown = true;
-            v.crownDeaths = 0;
-            v.crownKills = 0;
-            List<Player> crowns = _activeCrowns;
-            Helpers.Player_Crowns(_arena, true, crowns);
-            updateCrownTime(p);
-        }
-
-        public void updateCrownTime(Player p)
-        {   //Reset the player's counter
-            _playerCrownStatus[p].expireTime = Environment.TickCount + (_config.king.expireTime * 1000);
-        }
-
         #region Events
 
         /// <summary>
         /// Called when a player enters the arena
         /// </summary>
-        [Scripts.Event("Player.EnterArena")]
         public void playerEnterArena(Player player)
         {
-            //Send them the crowns..
-            if (!_playerCrownStatus.ContainsKey(player))
+
+            if (Script_Multi._bPvpHappyHour)
+                player.sendMessage(0, "&PvP Happy hour is currently active, Enjoy!");
+            else
             {
-                _playerCrownStatus[player] = new PlayerCrownStatus(false);
-                Helpers.Player_Crowns(_arena, true, _activeCrowns, player);
+                TimeSpan remaining = _baseScript.timeTo(Settings._pvpHappyHourStart);
+                player.sendMessage(0, String.Format("&PvP Happy hour starts in {0} hours & {1} minutes", remaining.Hours, remaining.Minutes));
             }
+
+            //Obtain the Co-Op skill..
+            SkillInfo coopskillInfo = _arena._server._assets.getSkillByID(200);
+
+            //Add the skill!
+            if (player.findSkill(200) != null)
+                player._skills.Remove(200);
+
+            //Obtain the Powerup skill..
+            SkillInfo powerupskillInfo = _arena._server._assets.getSkillByID(201);
+
+            //Add the skill!
+            if (player.findSkill(201) != null)
+                player._skills.Remove(201);
         }
 
         /// <summary>
         /// Called when a player enters the game
         /// </summary>
-        [Scripts.Event("Player.Enter")]
         public void playerEnter(Player player)
         {
-            //Send them the crowns and add them back to list incase a game is in progress
-            if (!_playerCrownStatus.ContainsKey(player))
-            {
-                _playerCrownStatus[player] = new PlayerCrownStatus(false);
-                Helpers.Player_Crowns(_arena, true, _activeCrowns, player);
-            }
         }
 
         /// <summary>
         /// Called when a player leaves the game
         /// </summary>
-        [Scripts.Event("Player.Leave")]
         public void playerLeave(Player player)
         {
-            if (_playerCrownStatus.ContainsKey(player))
-            {
-                _playerCrownStatus[player].crown = false;
-                Helpers.Player_Crowns(_arena, false, _noCrowns);
-            }
+        }
 
+        /// <summary>
+        /// Triggered when a player tries to heal
+        /// </summary>
+        public void PlayerRepair(Player from, ItemInfo.RepairItem item)
+        {
+        }
+
+
+        public void playerLeaveArena(Player player)
+        {
         }
 
         /// <summary>
         /// Called when the game begins
         /// </summary>
-        [Scripts.Event("Game.Start")]
         public bool gameStart()
         {	//We've started!
             _tickGameStart = Environment.TickCount;
             _tickGameStarting = 0;
-            _playerCrownStatus.Clear();
+            _tickLastShrink = Environment.TickCount;
+            _victoryTeam = null;
+            _baseScript.AllowPrivateTeams(false);
+            _activeTeams.Clear();
 
-            //Let everyone know
-            _arena.sendArenaMessage("Game has started!", 1);
+            List<ItemInfo> removes = AssetManager.Manager.getItems.Where(itm => itm.name.EndsWith("(BR)")).ToList();
 
-            _crownTeams = new List<Team>();
-            _playerCrownStatus = new Dictionary<Player, PlayerCrownStatus>();
-            List<Player> crownPlayers = (_config.king.giveSpecsCrowns ? _arena.Players : _arena.PlayersIngame).ToList();
-
-            //Check for first game to spawn flags, otherwise leave them alone
-            if (_firstGame)
+            foreach (Player player in _arena.Players)
             {
-                _arena.flagSpawn();
-                _firstGame = false;
+                foreach (ItemInfo item in removes)
+                    if (player.getInventoryAmount(item.id) > 0)
+                        player.removeAllItemFromInventory(item.id);
             }
 
-            foreach (var p in crownPlayers)
-            {
-                _playerCrownStatus[p] = new PlayerCrownStatus();
-                giveCrown(p);
-            }
-            //Everybody is king!
-            Helpers.Player_Crowns(_arena, true, crownPlayers);
+                //Let everyone know
+                _arena.sendArenaMessage("Game has started!", 1);
 
+            List<short> spawnPoints = new List<short>();
+            short maxLeft = 504;
+            short maxRight = 32168;
+            short center = 16488;
+            short separation = 1500;
+            short current = 0;
+            short requiredSpace = (short)(_arena.ActiveTeams.Count() * separation);
+
+            while (true)
+            {
+                current = (short)_rand.Next(maxLeft, maxRight);
+
+                if (current + requiredSpace > maxRight)
+                    continue;
+
+                break;
+            }
+            
+            foreach (Team team in _arena.ActiveTeams)
+            {
+                //Find a good location to spawn
+                short pX = current, pY = 1744;
+
+                //Spawn each player around this point
+                foreach (Player player in team.ActivePlayers)
+                {
+                    if (bClassic)
+                    {
+                        player.resetSkills();
+                        player.skillModify(true, _classSkill, 1);
+                    }
+                    player.warp(pX, pY);
+                }
+
+                spawnPoints.Add(current);
+                _activeTeams.Add(team);
+
+                current += separation;
+            }
+
+            //Start up the storm!
+            _storm = new Boundary(_arena, 104, 3624, (short)(spawnPoints.Last() + 800), (short)(spawnPoints.First() - 800));
+            _arena.setTicker(1, 3, 45 * 100, "Play area shrinking in: ");
+
+            //Hide some loot boxes
+            if (bClassic)
+            hideLootBoxes(_playersPerTeam, spawnPoints);
             return true;
         }
 
@@ -319,37 +363,42 @@ namespace InfServer.Script.GameType_Multi
         /// </summary>
         public void updateTickers()
         {
-            //string format;
-            if (_arena.ActiveTeams.Count() > 1)
-            {//Show players their crown timer using a ticker
-                _arena.setTicker(1, 0, 0, delegate (Player p)
-                {
-                    if (_playerCrownStatus.ContainsKey(p) && _playerCrownStatus[p].crown)
-                        return String.Format("Crown Timer: {0}", (_playerCrownStatus[p].expireTime - Environment.TickCount) / 1000);
-
-                    else
-                        return "";
-                });
-            }
         }
 
         /// <summary>
         /// Called when the game ends
         /// </summary>
-        [Scripts.Event("Game.End")]
         public bool gameEnd()
         {	//Game finished, perhaps start a new one
-
+            _gameCount = _gameCount + 1;
             _arena.sendArenaMessage("Game Over");
 
             _tickGameStart = 0;
             _tickGameStarting = 0;
             _victoryTeam = null;
-            _crownTeams = null;
-            //It would be preferable to send false, {emtpy list} here
-            //Needs testing
-            Helpers.Player_Crowns(_arena, false, _arena.Players.ToList());
-            _playerCrownStatus.Clear();
+
+            List<ItemInfo> removes = AssetManager.Manager.getItems.Where(itm => itm.name.EndsWith("(BR)")).ToList();
+
+            foreach (Player player in _arena.Players)
+            {
+                foreach (ItemInfo item in removes)
+                    if (player.getInventoryAmount(item.id) > 0)
+                        player.removeAllItemFromInventory(item.id);
+
+                if (player._team._name == "Red" || player._team._name == "Blue")
+                {
+                    pickTeam(player);
+                    continue;
+                }
+
+                if (player._team._name == "spec")
+                    continue;
+
+                if (!player.IsSpectator)
+                    continue;
+
+                player.unspec(player._team);
+            }
 
             return true;
         }
@@ -357,7 +406,6 @@ namespace InfServer.Script.GameType_Multi
         /// <summary>
         /// Called when the statistical breakdown is displayed
         /// </summary>
-        [Scripts.Event("Player.Breakdown")]
         public bool playerBreakdown(Player from, bool bCurrent)
         {	//Show some statistics!
             return false;
@@ -366,7 +414,6 @@ namespace InfServer.Script.GameType_Multi
         /// <summary>
         /// Called when the statistical breakdown is displayed
         /// </summary>
-        [Scripts.Event("Game.Breakdown")]
         public bool breakdown()
         {	//Allows additional "custom" breakdown information
 
@@ -377,68 +424,85 @@ namespace InfServer.Script.GameType_Multi
         /// <summary>
         /// Called to reset the game state
         /// </summary>
-        [Scripts.Event("Game.Reset")]
         public bool gameReset()
         {	//Game reset, perhaps start a new one
             _tickGameStart = 0;
             _tickGameStarting = 0;
 
-            _firstGame = true;
             _victoryTeam = null;
-            return true;
-        }
-
-        /// <summary>
-        /// Called when a player sends a chat command
-        /// </summary>
-        [Scripts.Event("Player.ChatCommand")]
-        public bool playerChatCommand(Player player, Player recipient, string command, string payload)
-        {
-            if (command.ToLower().Equals("crown"))
-            {   //Give them their crown time
-                if (_playerCrownStatus.ContainsKey(player))
-                    player.sendMessage(0, "&Crown kills: " + _playerCrownStatus[player].crownKills);
-            }
-
-            /* if (command.ToLower().Equals("Skear"))
-             {
-                 foreach (LioInfo.Hide firework in _arena._server._assets.Lios.Hides.Where(h => h.GeneralData.Name.ToLower().Contains("firework")))
-                     Helpers.Player_RouteExplosion(_arena.Players, (short)firework.HideData.HideId, firework.GeneralData.OffsetX, firework.GeneralData.OffsetY, 0, 0);
-             }*/
             return true;
         }
 
         /// <summary>
         /// Handles the spawn of a player
         /// </summary>
-        [Scripts.Event("Player.Spawn")]
         public bool playerSpawn(Player player, bool bDeath)
         {
+            if (player._team == _red || player._team == _blue)
+                return true;
+
+            if (_arena._bGameRunning && bDeath)
+            {
+                player.spec(player._team);
+                player.sendMessage(0, "You've been knocked out of the game, You may continue to play Red/Blue until the next game!");
+
+                if (player._team.ActivePlayerCount == 0)
+                    _activeTeams.Remove(player._team);
+
+            }
             return true;
         }
 
         /// <summary>
         /// Triggered when a player wants to unspec and join the game
         /// </summary>
-        [Scripts.Event("Player.JoinGame")]
         public bool playerJoinGame(Player player)
         {
+            if (_arena._bGameRunning)
+                pickOutTeam(player);
+            else
+                pickTeam(player);
 
             return true;
+        }
+
+        public void pickOutTeam(Player player)
+        {
+            if (_red.ActivePlayerCount <= _blue.ActivePlayerCount)
+            {
+                if (player._team != _red)
+                {
+                    player.unspec(_red);
+                }
+            }
+            else
+            {
+                if (player._team != _blue)
+                {
+                    player.unspec(_blue);
+                }
+            }
+        }
+
+        public void pickTeam(Player player)
+        {
+            List<Team> potentialTeams = _arena.ActiveTeams.Where(t => t._name.StartsWith("Public") && t.ActivePlayerCount < _playersPerTeam).ToList();
+
+            //Put him on a new Public Team
+            if (potentialTeams.Count == 0)
+            {
+                Team newTeam = _arena.PublicTeams.First(t => t._name.StartsWith("Public") && t.ActivePlayerCount == 0);
+                newTeam.addPlayer(player);
+            }
+            else
+                potentialTeams.First().addPlayer(player);
         }
 
         /// <summary>
         /// Triggered when a player wants to spec and leave the game
         /// </summary>
-        [Scripts.Event("Player.LeaveGame")]
         public bool playerLeaveGame(Player player)
         {
-
-            if (_playerCrownStatus.ContainsKey(player))
-            {
-                _playerCrownStatus[player].crown = false;
-                Helpers.Player_Crowns(_arena, false, _noCrowns);
-            }
             return true;
         }
 
@@ -446,51 +510,82 @@ namespace InfServer.Script.GameType_Multi
         /// Triggered when a player has died, by any means
         /// </summary>
         /// <remarks>killer may be null if it wasn't a player kill</remarks>
-        [Scripts.Event("Player.Death")]
         public bool playerDeath(Player victim, Player killer, Helpers.KillType killType, CS_VehicleDeath update)
-        {
+        {   
             return true;
         }
 
         /// <summary>
         /// Triggered when one player has killed another
         /// </summary>
-        [Scripts.Event("Player.PlayerKill")]
         public bool playerPlayerKill(Player victim, Player killer)
         {
-            //Check if a game is running
-            if (_activeCrowns.Count == 0)
-                return true;
-
-            if (_playerCrownStatus[victim].crown)
-            {   //Incr crownDeaths
-                _playerCrownStatus[victim].crownDeaths++;
-
-                if (_playerCrownStatus[victim].crownDeaths >= _config.king.deathCount)
-                {
-                    //Take it away now
-                    _playerCrownStatus[victim].crown = false;
-                    _noCrowns.Remove(victim);
-                    Helpers.Player_Crowns(_arena, false, _noCrowns);
-                }
-
-                if (!_playerCrownStatus[killer].crown)
-                    _playerCrownStatus[killer].crownKills++;
-            }
-
-
-            //Reset their timer
-            if (_playerCrownStatus[killer].crown)
-                updateCrownTime(killer);
-            else if (_config.king.crownRecoverKills != 0)
-            {   //Should they get a crown?
-                if (_playerCrownStatus[killer].crownKills >= _config.king.crownRecoverKills)
-                {
-                    _playerCrownStatus[killer].crown = true;
-                    giveCrown(killer);
-                }
-            }
             return true;
+        }
+
+        /// <summary>
+        /// Triggered when a vehicle dies
+        /// </summary>
+        public bool vehicleDeath(Vehicle dead, Player killer)
+        {
+            if (dead._type.Name == "Loot Box")
+            {
+                List<ItemInfo> potentialItems = AssetManager.Manager.getItems.Where(itm => itm.name.EndsWith("(Loot)")).ToList();
+
+                if (potentialItems.Count == 0)
+                    return true;
+
+                int idx = _rand.Next(potentialItems.Count);
+
+                ItemInfo drop = potentialItems[idx];
+
+                if (drop == null)
+                    return true;
+
+                _arena.itemSpawn(drop, 1, dead._state.positionX, dead._state.positionY, null);
+            }
+
+            return true;
+        }
+
+        #endregion
+
+        #region Private Routines
+        private void hideLootBoxes(int count, List<short> spawnPoints)
+        {
+            VehInfo box = AssetManager.Manager.getVehicleByID(413);
+
+            foreach (short posX in spawnPoints)
+            {
+                short posY = 1744;
+
+                for (int i = 0; i < count; i++)
+                {
+                    //Generate some random coordinates
+                    short pX = 0;
+                    short pY = 0;
+                    int attempts = 0;
+                    for (; attempts < 30; attempts++)
+                    {
+                        pX = posX;
+                        pY = posY;
+
+                        Helpers.randomPositionInArea(_arena, 2500, ref pX, ref pY);
+
+                        //Is it blocked?
+                        if (_arena.getTile(pX, pY).Blocked)
+                            //Try again
+                            continue;
+
+                        Helpers.ObjectState newState = new Helpers.ObjectState();
+                        newState.positionX = pX;
+                        newState.positionY = pY;
+                        _arena.newVehicle(box, _arena.getTeamByName("spec"), null, newState);
+                        break;
+                    }
+                }
+            }
+                
         }
         #endregion
     }

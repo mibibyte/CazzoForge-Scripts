@@ -29,6 +29,7 @@ namespace InfServer.Script.GameType_Multi
         private List<CapturePoint> _activePoints;
         private List<CapturePoint> _allPoints;
         private int _lastFlagCheck;
+        private int _minPlayers = 1;
         public Script_Multi _baseScript;
 
         private int _flagCaptureRadius = 250;
@@ -82,6 +83,37 @@ namespace InfServer.Script.GameType_Multi
             {
                 UpdateTickers();
                 _lastTickerUpdate = now;
+            }
+
+            int playing = _arena.PlayerCount;
+            if (_arena._bGameRunning && playing < _minPlayers && _arena._bIsPublic)
+            {
+                _baseScript.bJackpot = false;
+                //Stop the game and reset voting
+                _arena.gameEnd();
+
+            }
+            if (playing < _minPlayers && _arena._bIsPublic)
+            {
+                _baseScript._tickGameStarting = 0;
+                _arena.setTicker(1, 3, 0, "Not Enough Players");
+            }
+
+            if (playing < _minPlayers && !_arena._bIsPublic && !_arena._bGameRunning)
+            {
+                _baseScript._tickGameStarting = 0;
+                _arena.setTicker(1, 3, 0, "Private arena, Waiting for arena owner to start the game!");
+            }
+
+            //Do we have enough to start a game?
+            if (!_arena._bGameRunning && _baseScript._tickGameStarting == 0 && playing >= _minPlayers && _arena._bIsPublic)
+            {
+                _baseScript._tickGameStarting = now;
+                _arena.setTicker(1, 3, _config.deathMatch.startDelay * 100, "Next game: ",
+                    delegate ()
+                    {   //Trigger the game start
+                        _arena.gameStart();
+                    });
             }
 
 

@@ -29,30 +29,14 @@ namespace InfServer.Script.GameType_Multi
             Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(_botTeam, true);
             Helpers.ObjectState openPoint = new Helpers.ObjectState();
 
-            /*
-            Random rand = new Random();
-            warpPoint = _baseScript.findFlagWarp(_botTeam, false);
-            short randomoffset = (short)(warpPoint.positionX + rand.Next(0, 800));
-            openPoint = _baseScript.findOpenWarp(_botTeam, _arena, randomoffset, warpPoint.positionY, 1200);
-            */
+            if (warpPoint == null)
+                return;
 
-            warpPoint = _baseScript.findFlagWarp(_botTeam, false);
             openPoint = _baseScript.findOpenWarp(_botTeam, _arena, warpPoint.positionX, warpPoint.positionY, 200);
 
             if (!newBot(team, BotType.EliteHeavy, null, null, openPoint))
                 Log.write(TLog.Warning, "Unable to spawn bot");
 
-        }
-        public void spawnEliteHeavy(Player player, Team team)
-        {
-            if (!newBot(team, BotType.EliteHeavy, null, null, player._state))
-                Log.write(TLog.Warning, "Unable to spawn bot");
-        }
-
-        public void spawnEliteMarine(Player player, Team team)
-        {
-            if (!newBot(team, BotType.EliteMarine, null, null, player._state))
-                Log.write(TLog.Warning, "Unable to spawn bot");
         }
 
         public void spawnEliteMarine(Team team)
@@ -60,14 +44,9 @@ namespace InfServer.Script.GameType_Multi
             Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(_botTeam, true);
             Helpers.ObjectState openPoint = new Helpers.ObjectState();
 
-            /*
-            Random rand = new Random();
-            warpPoint = _baseScript.findFlagWarp(_botTeam, false);
-            short randomoffset = (short)(warpPoint.positionX + rand.Next(0, 800));
-            openPoint = _baseScript.findOpenWarp(_botTeam, _arena, randomoffset, warpPoint.positionY, 1200);
-            */
+            if (warpPoint == null)
+                return;
 
-            warpPoint = _baseScript.findFlagWarp(_botTeam, false);
             openPoint = _baseScript.findOpenWarp(_botTeam, _arena, warpPoint.positionX, warpPoint.positionY, 200);
 
             if (!newBot(team, BotType.EliteMarine, null, null, openPoint))
@@ -94,7 +73,8 @@ namespace InfServer.Script.GameType_Multi
 
             Random rand = new Random();
 
-            
+            if (warpPoint == null)
+                return;
 
             for (int i = 0; i < count; i++)
             {
@@ -107,7 +87,6 @@ namespace InfServer.Script.GameType_Multi
 
 
                 short randomoffset = (short)(warpPoint.positionX + rand.Next(0, 800));
-                warpPoint = _baseScript.findFlagWarp(_botTeam, true);
                 openPoint = _baseScript.findOpenWarp(_botTeam, _arena, randomoffset, warpPoint.positionY, 1200);
 
 
@@ -120,15 +99,17 @@ namespace InfServer.Script.GameType_Multi
 
         public void spawnMedicWave(Team team, int count)
         {
-            Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(_botTeam, true);
+            Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(team, true);
             Helpers.ObjectState openPoint = new Helpers.ObjectState();
+
+            if (warpPoint == null)
+                return;
 
             Random rand = new Random();
 
             for (int i = 0; i < count; i++)
             {
                 short randomoffset = (short)(warpPoint.positionX + rand.Next(0, 800));
-                warpPoint = _baseScript.findFlagWarp(team, true);
                 openPoint = _baseScript.findOpenWarp(team, _arena, randomoffset, warpPoint.positionY, 1200);
 
 
@@ -143,10 +124,12 @@ namespace InfServer.Script.GameType_Multi
             Helpers.ObjectState openPoint = new Helpers.ObjectState();
             Random rand = new Random();
 
+            if (warpPoint == null)
+                return;
+
             for (int i = 0; i < count; i++)
             {
                 short randomoffset = (short)(warpPoint.positionX + rand.Next(0, 800));
-                warpPoint = _baseScript.findFlagWarp(_botTeam, true);
                 openPoint = _baseScript.findOpenWarp(_botTeam, _arena, randomoffset, warpPoint.positionY, 1200);
 
                 if (!newBot(team, BotType.Marine, null, null, openPoint))
@@ -163,10 +146,12 @@ namespace InfServer.Script.GameType_Multi
             Helpers.ObjectState openPoint = new Helpers.ObjectState();
             Random rand = new Random();
 
+            if (warpPoint == null)
+                return;
+
             for (int i = 0; i < count; i++)
             {
                 short randomoffset = (short)(warpPoint.positionX + rand.Next(0, 800));
-                warpPoint = _baseScript.findFlagWarp(_botTeam, true);
                 openPoint = _baseScript.findOpenWarp(_botTeam, _arena, randomoffset, warpPoint.positionY, 1200);
 
                 if (!newBot(team, BotType.Ripper, null, null, openPoint))
@@ -197,23 +182,11 @@ namespace InfServer.Script.GameType_Multi
             Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(_botTeam, true);
             Helpers.ObjectState openPoint = new Helpers.ObjectState();
 
-            /*
-            Random rand = new Random();
-            warpPoint = _baseScript.findFlagWarp(_botTeam, false);
-            short randomoffset = (short)(warpPoint.positionX + rand.Next(0, 800));
-            openPoint = _baseScript.findOpenWarp(_botTeam, _arena, randomoffset, warpPoint.positionY, 1200);
-            */
+            if (warpPoint == null)
+                return;
 
-            warpPoint = _baseScript.findFlagWarp(_botTeam, false);
             openPoint = _baseScript.findOpenWarp(_botTeam, _arena, warpPoint.positionX, warpPoint.positionY, 400);
             
-            /*
-            Random rand = new Random();
-            warpPoint = _baseScript.findFlagWarp(_botTeam, false);
-            short randomoffsetX = (short)(warpPoint.positionX + rand.Next(0, 100));
-            short randomoffsetY = (short)(warpPoint.positionX + rand.Next(0, 100));
-            openPoint = _baseScript.findOpenWarp(_botTeam, _arena, randomoffsetX, randomoffsetY, 200);
-            */
             if (!newBot(team, BotType.ExoLight, null, null, openPoint))
                 Log.write(TLog.Warning, "Unable to spawn bot");
         }
@@ -222,14 +195,10 @@ namespace InfServer.Script.GameType_Multi
         {
             Helpers.ObjectState warpPoint = _baseScript.findFlagWarp(_botTeam, true);
             Helpers.ObjectState openPoint = new Helpers.ObjectState();
-            /*
-            Random rand = new Random();
-            warpPoint = _baseScript.findFlagWarp(_botTeam, false);
-            short randomoffset = (short)(warpPoint.positionX + rand.Next(0, 800));
-            openPoint = _baseScript.findOpenWarp(_botTeam, _arena, randomoffset, warpPoint.positionY, 1200);
-            */
 
-            warpPoint = _baseScript.findFlagWarp(_botTeam, false);
+            if (warpPoint == null)
+                return;
+
             openPoint = _baseScript.findOpenWarp(_botTeam, _arena, warpPoint.positionX, warpPoint.positionY, 400);
 
             if (!newBot(team, BotType.ExoHeavy, null, null, openPoint))
@@ -506,12 +475,13 @@ namespace InfServer.Script.GameType_Multi
                         if (!_secondHeavyExoWave)
                         {
                             _secondHeavyExoWave = true;
+                            spawnFort(FortificationType.Light);
 
                             if ((_botDifficulty + _botDifficultyPlayerModifier) >= 1)
                             {
                                 _arena.sendArenaMessage("!The enemy has sent a Heavy ExoSuit to stop you!", 4);
                                 spawnExoHeavy(_botTeam);
-                                spawnFort(FortificationType.Light);
+                                
                             }
                             
                         }
@@ -540,6 +510,7 @@ namespace InfServer.Script.GameType_Multi
                         if (!_thirdLightExoWave)
                         {
                             _thirdLightExoWave = true;
+                            spawnFort(FortificationType.Light);
 
                             if ((_botDifficulty + _botDifficultyPlayerModifier) >= 1)
                             {
@@ -578,6 +549,7 @@ namespace InfServer.Script.GameType_Multi
                         if (!_ninthDifficultyWave)
                         {
                             _ninthDifficultyWave = true;
+                            spawnFort(FortificationType.Light);
 
                             if ((_botDifficulty + _botDifficultyPlayerModifier) >= 24)
                             {

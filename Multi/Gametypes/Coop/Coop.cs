@@ -33,6 +33,7 @@ namespace InfServer.Script.GameType_Multi
         private int _flagCaptureTime = 5;
         private int _flagsCaptured;
         private int _totalFlags;
+        private int _minPlayers = 1;
 
         public int _botDifficulty;   // 1-10 are valid entries, controls percentage of veteran spawns.
         public int _botDifficultyPlayerModifier;   // Used to increase difficulty of arena when over 6 players.
@@ -101,6 +102,37 @@ namespace InfServer.Script.GameType_Multi
 
         public void Poll(int now)
         {
+
+            int playing = _arena.PlayerCount;
+            if (_arena._bGameRunning && playing < _minPlayers && _arena._bIsPublic)
+            {
+                _baseScript.bJackpot = false;
+                //Stop the game and reset voting
+                _arena.gameEnd();
+
+            }
+            if (playing < _minPlayers && _arena._bIsPublic)
+            {
+                _baseScript._tickGameStarting = 0;
+                _arena.setTicker(1, 3, 0, "Not Enough Players");
+            }
+
+            if (playing < _minPlayers && !_arena._bIsPublic && !_arena._bGameRunning)
+            {
+                _baseScript._tickGameStarting = 0;
+                _arena.setTicker(1, 3, 0, "Private arena, Waiting for arena owner to start the game!");
+            }
+
+            //Do we have enough to start a game?
+            if (!_arena._bGameRunning && _baseScript._tickGameStarting == 0 && playing >= _minPlayers && _arena._bIsPublic)
+            {
+                _baseScript._tickGameStarting = now;
+                _arena.setTicker(1, 3, _config.deathMatch.startDelay * 100, "Next game: ",
+                    delegate ()
+                    {   //Trigger the game start
+                        _arena.gameStart();
+                    });
+            }
 
             if (now - _lastTickerUpdate >= 1000)
             {
