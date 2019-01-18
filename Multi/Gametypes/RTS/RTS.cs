@@ -26,6 +26,9 @@ namespace InfServer.Script.GameType_Multi
         private Random _rand;
 
         private int _lastGameCheck;				//The tick at which we last checked for game viability
+        private Player _owner;
+        private Team _ownerTeam;
+        private Database _database;
       
 
         public class Position
@@ -66,6 +69,28 @@ namespace InfServer.Script.GameType_Multi
             return true;
         }
 
+        public void init()
+        {
+            //Figure out who owns the arena
+            string owner = _arena._name.Substring(5, _arena._name.Length - 5).TrimStart();
+            _owner = _arena.getPlayerByName(owner);
+
+            //Create our team
+            _ownerTeam = new Team(_arena, _arena._server);
+
+            //Assign some information to the team
+            _ownerTeam._name = owner;
+            _ownerTeam._isPrivate = true;
+            _ownerTeam._password = "1234abc";
+            _ownerTeam._id = (short)_arena.Teams.Count();
+
+            
+            _arena.createTeam(_ownerTeam);
+            //Load our database
+            _database = _baseScript._database;
+            _database.loadBuildings(owner, _ownerTeam);
+        }
+
         #region Events
 
         /// <summary>
@@ -74,13 +99,13 @@ namespace InfServer.Script.GameType_Multi
         public void playerEnterArena(Player player)
         {
 
-            if (Script_Multi._bPvpHappyHour)
-                player.sendMessage(0, "&PvP Happy hour is currently active, Enjoy!");
-            else
-            {
-                TimeSpan remaining = _baseScript.timeTo(Settings._pvpHappyHourStart);
-                player.sendMessage(0, String.Format("&PvP Happy hour starts in {0} hours & {1} minutes", remaining.Hours, remaining.Minutes));
-            }
+            //First player?
+            if (_arena.TotalPlayerCount == 1)
+                init();
+
+
+            if (player == _owner)
+                player.sendMessage(0, "Welcome home!");
 
             //Obtain the Co-Op skill..
             SkillInfo coopskillInfo = _arena._server._assets.getSkillByID(200);
@@ -95,6 +120,11 @@ namespace InfServer.Script.GameType_Multi
             //Add the skill!
             if (player.findSkill(201) != null)
                 player._skills.Remove(201);
+        }
+
+        public bool playerPortal(Player player, LioInfo.Portal portal)
+        {
+            return false;
         }
 
         /// <summary>
@@ -172,6 +202,18 @@ namespace InfServer.Script.GameType_Multi
             return true;
         }
 
+        #endregion
+
+        #region Command Handlers
+        public bool playerModcommand(Player player, Player recipient, string command, string payload)
+        {
+            return true;
+        }
+
+        public bool playerChatCommand(Player player, Player recipient, string command, string payload)
+        {
+            return true;
+        }
         #endregion
 
     }

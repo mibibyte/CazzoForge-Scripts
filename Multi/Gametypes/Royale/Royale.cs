@@ -32,11 +32,16 @@ namespace InfServer.Script.GameType_Multi
         private int _tickGameStarting;			//The tick at which the game began starting (0 == not initiated)
         private int _tickGameStart;				//The tick at which the game started (0 == stopped)
         private int _tickLastShrink;
+        private int _tickLastReadyCheck;
 
         private List<Team> _activeTeams;
+        private Dictionary<string, bool> _playersReady;
 
         //Settings
         public bool bClassic;
+        public bool bGameLocked;
+        public bool bAllPlayersReady;
+
         private int _minPlayers = 2;				//The minimum amount of players
         private int _gameCount = 0;
         private int _playersPerTeam = 1;
@@ -71,8 +76,13 @@ namespace InfServer.Script.GameType_Multi
             _blue = _arena.getTeamByName("Blue");
             _rand = new Random();
             _activeTeams = new List<Team>();
-            manualTeamSizePick = 0;
-            bClassic = true;
+            _playersReady = new Dictionary<string, bool>();
+            _tickLastReadyCheck = 0;
+
+           manualTeamSizePick = 0;
+            bClassic = false; // Turn on looting.
+            bGameLocked = true;
+            bAllPlayersReady = false;
         }
 
         /// <summary>
@@ -92,9 +102,9 @@ namespace InfServer.Script.GameType_Multi
 
             if (_arena._bGameRunning)
             {
-                if (now - _tickLastShrink >= 30000)
+                if (now - _tickLastShrink >= 15000)
                 {
-                    short shrinkAmount = (short)((_storm.Width + _storm.Height) * 0.15);
+                    short shrinkAmount = (short)((_storm.Width + _storm.Height) * 0.25);
 
                     if (_storm.Width < _storm.Height) 
                         _storm.Shrink(shrinkAmount, true);
@@ -103,7 +113,7 @@ namespace InfServer.Script.GameType_Multi
 
                     _tickLastShrink = now;
 
-                    _arena.setTicker(1, 3, 30 * 100, "Play area shrinking in: ");
+                    _arena.setTicker(1, 3, 15 * 100, "Play area shrinking in: ");
                 }
                 _storm.Poll(now);
 
@@ -153,39 +163,92 @@ namespace InfServer.Script.GameType_Multi
             if (!_arena._bGameRunning && _baseScript._tickGameStarting == 0 && playing >= _minPlayers && _arena._bIsPublic)
             {
                 _baseScript._tickGameStarting = now;
+                _arena.sendArenaMessage("New game starting in 30 seconds or less. Please unspec in the next 15 seconds to play in the next tournament.");
+               //Put 15 second locked timer in
 
-                gameSetup();
-
-                _arena.setTicker(1, 3, 45 * 100, "Next game: ",
+                _arena.setTicker(1, 3, 15 * 100, "Time until entrance into the tournament is locked: ",
                     delegate ()
                     {   //Trigger the game start
-                        _arena.gameStart();
+                        gameSetup();                      
+                        _arena.setTicker(1, 3, 15 * 100, "Time until tournament starts: ",
+
+                        delegate ()
+                        {   //Trigger the game start
+                        });
                     });
             }
-            return true;
+            if (_baseScript._tickGameStarting > 0 && now - _baseScript._tickGameStarting > 15000)
+            {
+                if (_tickLastReadyCheck == 0 || now - _tickLastReadyCheck > 1000)
+                {
+                    if (checkForAllPlayersReady())
+                        bAllPlayersReady = true;
+                    _tickLastReadyCheck = now;
+                }
+
+                
+
+                if (bAllPlayersReady)
+                    _arena.gameStart();
+                else if (now - _baseScript._tickGameStarting > 30000)
+                    _arena.gameStart();
+            }
+
+                return true;
         }
 
         public void gameSetup()
         {
-            if (_arena.PlayerCount >= 2)
-                _playersPerTeam = 1;
-            if (_arena.PlayerCount >= 4)
-                _playersPerTeam = 2;
-            else if (_arena.PlayerCount >= 6)
-                _playersPerTeam = 2;
-            else if (_arena.PlayerCount >= 12)
-                _playersPerTeam = 3;
-            else if (_arena.PlayerCount >= 16)
-                _playersPerTeam = 4;
-            else if (_arena.PlayerCount >= 20)
-                _playersPerTeam = 5;
-
 
             foreach (Player player in _arena.PlayersIngame)
+            {
                 if (player._team._name == "Red" || player._team._name == "Blue")
-                    pickTeam(player);
+                    pickTeam(player);             
+            }
 
-            if (_gameCount >= 3)
+
+
+            List<int> teamSizePickList = new List<int>();
+            int playersToConsider = _arena.PlayerCount; // later adjust this for private teams.
+
+            if (playersToConsider <= 7)
+            {
+                teamSizePickList.Add(1);
+            }
+            if ((playersToConsider >= 4) && (playersToConsider <= 16))
+            {
+                teamSizePickList.Add(2);
+            }
+            if (playersToConsider % 2 == 0) //If can split team evenly ,add that team size.
+                teamSizePickList.Add(playersToConsider / 2);
+
+            if (((playersToConsider % 3 == 0) && (playersToConsider != 3)) || ((playersToConsider >= 11) && (playersToConsider <= 30)))
+            {
+                teamSizePickList.Add(3);
+            }
+            if (((playersToConsider % 4 == 0) && (playersToConsider != 4)) || ((playersToConsider >= 22) && (playersToConsider <= 40)))
+            {
+                teamSizePickList.Add(4);
+            }
+            if (((playersToConsider % 5 == 0) && (playersToConsider != 5)) || ((playersToConsider >= 28) && (playersToConsider <= 50)))
+            {
+                teamSizePickList.Add(5);
+            }
+            if (((playersToConsider % 6 == 0) && (playersToConsider != 6)) || ((playersToConsider >= 34) && (playersToConsider <= 60)))
+            {
+                teamSizePickList.Add(6);
+            }
+            if (((playersToConsider % 7 == 0) && (playersToConsider != 7)) || ((playersToConsider >= 40) && (playersToConsider <= 70)))
+            {
+                teamSizePickList.Add(7);
+            }
+
+            Random randTeamSizePick = new Random();
+
+            int teamSizePick = teamSizePickList[randTeamSizePick.Next(teamSizePickList.Count)];
+            _playersPerTeam = teamSizePick;
+
+            if (_gameCount >= 0) // change to 3 to scramble every 3 games. need to compare team size last game to this pick
             {
                 _arena.sendArenaMessage("Teams have been scrambled");
                 _arena.scrambleTeams(_arena.PlayersIngame.Where(p => !p._team._isPrivate),
@@ -195,11 +258,14 @@ namespace InfServer.Script.GameType_Multi
                 _gameCount = 0;
             }
 
-            _arena.sendArenaMessage(String.Format("A new Royale game is starting soon, " +
-                "Players have 45 seconds to assemble/alter their teams. " +
-                "Teams will be locked when the game begins. Max team size for this game: {0}", _playersPerTeam));
-
-            _baseScript.AllowPrivateTeams(true);
+            _arena.sendArenaMessage(String.Format("Teams are now locked for the upcoming tournament. " +
+                "Players will now have 15 seconds to pick classes before the tournament begins. " +
+                "Max team size for this game: {0}", _playersPerTeam));
+            _arena.sendArenaMessage("Game will start early by having all players 'Ready Up' by walking over a Dropship Portal.");
+            bGameLocked = true;
+            bAllPlayersReady = false;
+            _playersReady.Clear();
+            //_baseScript.AllowPrivateTeams(true);
         }
 
         public void checkForwinner()
@@ -227,6 +293,35 @@ namespace InfServer.Script.GameType_Multi
                 _arena.gameEnd();
             }
         }
+
+        public bool checkForAllPlayersReady()
+        {
+            foreach (Player player in _arena.PlayersIngame)
+            {
+                if (player._team._name == "Red" || player._team._name == "Blue" || player._team._name == "spec")
+                    continue;
+
+                if (_playersReady.ContainsKey(player._alias))
+                {
+                    if (_playersReady[player._alias])
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                else
+                {
+                    _playersReady[player._alias] = false;
+                    return false;
+                }
+
+            }
+            return true;
+        }
+
         #region Events
 
         /// <summary>
@@ -263,6 +358,7 @@ namespace InfServer.Script.GameType_Multi
         /// </summary>
         public void playerEnter(Player player)
         {
+
         }
 
         /// <summary>
@@ -291,9 +387,10 @@ namespace InfServer.Script.GameType_Multi
         {	//We've started!
             _tickGameStart = Environment.TickCount;
             _tickGameStarting = 0;
+            _tickLastReadyCheck = 0;
             _tickLastShrink = Environment.TickCount;
             _victoryTeam = null;
-            _baseScript.AllowPrivateTeams(false);
+            //_baseScript.AllowPrivateTeams(false); Re-enable when private teams are allowed.
             _activeTeams.Clear();
 
             List<ItemInfo> removes = AssetManager.Manager.getItems.Where(itm => itm.name.EndsWith("(BR)")).ToList();
@@ -314,7 +411,15 @@ namespace InfServer.Script.GameType_Multi
             short center = 16488;
             short separation = 1500;
             short current = 0;
-            short requiredSpace = (short)(_arena.ActiveTeams.Count() * separation);
+
+            int teamCountSansRedBlue = _arena.ActiveTeams.Count();
+
+            if (_arena.getTeamByName("Red").ActivePlayerCount > 0)
+               teamCountSansRedBlue--;
+            if (_arena.getTeamByName("Blue").ActivePlayerCount > 0)
+                teamCountSansRedBlue--;
+
+            short requiredSpace = (short)(teamCountSansRedBlue * separation);
 
             while (true)
             {
@@ -328,6 +433,9 @@ namespace InfServer.Script.GameType_Multi
             
             foreach (Team team in _arena.ActiveTeams)
             {
+                if (team._name == "Red" || team._name == "Blue") // Skip Red vs Blue for spawning
+                    continue;
+
                 //Find a good location to spawn
                 short pX = current, pY = 1744;
 
@@ -350,7 +458,10 @@ namespace InfServer.Script.GameType_Multi
 
             //Start up the storm!
             _storm = new Boundary(_arena, 104, 3624, (short)(spawnPoints.Last() + 800), (short)(spawnPoints.First() - 800));
-            _arena.setTicker(1, 3, 45 * 100, "Play area shrinking in: ");
+            _arena.setTicker(1, 3, 15 * 100, "Play area shrinking in: ");
+
+            //Clear flags
+            _arena.flagReset();
 
             //Hide some loot boxes
             if (bClassic)
@@ -375,7 +486,10 @@ namespace InfServer.Script.GameType_Multi
 
             _tickGameStart = 0;
             _tickGameStarting = 0;
+            _tickLastReadyCheck = 0;
             _victoryTeam = null;
+
+            bGameLocked = false;
 
             List<ItemInfo> removes = AssetManager.Manager.getItems.Where(itm => itm.name.EndsWith("(BR)")).ToList();
 
@@ -428,7 +542,7 @@ namespace InfServer.Script.GameType_Multi
         {	//Game reset, perhaps start a new one
             _tickGameStart = 0;
             _tickGameStarting = 0;
-
+            bGameLocked = false;
             _victoryTeam = null;
             return true;
         }
@@ -437,42 +551,13 @@ namespace InfServer.Script.GameType_Multi
         {
             if (portal.GeneralData.Name.Contains("DS Portal"))
             {
-                Helpers.ObjectState flagPoint;
-                Helpers.ObjectState warpPoint;
-
-                flagPoint = _baseScript.findFlagWarp(player, false);
-
-                if (flagPoint == null)
+                if ((!_arena._bGameRunning) && (bGameLocked))
                 {
-                    Log.write(TLog.Normal, String.Format("Could not find suitable flag warp for {0}", player._alias));
+                    _playersReady[player._alias] = true;
 
-                    if (!_baseScript._lastSpawn.ContainsKey(player._alias))
-                    {
-                        player.sendMessage(-1, "Could not find suitable warp, warped to landing ship!");
-                        return true;
-                    }
-                    else
-                        warpPoint = _baseScript._lastSpawn[player._alias];
-                }
-                else
-                {
-                    warpPoint = _baseScript.findOpenWarp(player, _arena, flagPoint.positionX, 1744, _baseScript._playerWarpRadius);
+                    _arena.sendArenaMessage(String.Format("{0} has won!", _playersReady[player._alias]));
                 }
 
-                if (warpPoint == null)
-                {
-                    Log.write(TLog.Normal, String.Format("Could not find open warp for {0} (Warp Blocked)", player._alias));
-                    player.sendMessage(-1, "Warp was blocked, please try again");
-                    return false;
-                }
-
-                _baseScript.warp(player, warpPoint);
-
-                if (_baseScript._lastSpawn.ContainsKey(player._alias))
-                    _baseScript._lastSpawn[player._alias] = warpPoint;
-                else
-                    _baseScript._lastSpawn.Add(player._alias, warpPoint);
-                return false;
             }
             return false;
         }
@@ -487,7 +572,7 @@ namespace InfServer.Script.GameType_Multi
 
             if (_arena._bGameRunning && bDeath)
             {
-                player.spec(player._team);
+                player.spec("spec");
                 player.sendMessage(0, "You've been knocked out of the game, You may continue to play Red/Blue until the next game!");
 
                 if (player._team.ActivePlayerCount == 0)
@@ -502,10 +587,13 @@ namespace InfServer.Script.GameType_Multi
         /// </summary>
         public bool playerJoinGame(Player player)
         {
-            if (_arena._bGameRunning)
-                pickOutTeam(player);
+            if ((_arena._bGameRunning) || (bGameLocked)) // Probably can just gamelocked
+            pickOutTeam(player);
             else
                 pickTeam(player);
+
+            if (player.getInventoryAmount(188) == 0) // Check for Royale Armor and add it.
+                player.inventoryModify(188, 1);
 
             return true;
         }

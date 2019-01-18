@@ -30,6 +30,7 @@ namespace InfServer.Script.GameType_Multi
         public bool bJackpot;
         public Dictionary<ushort, LootDrop> _privateLoot;
         public Dictionary<ushort, LootDrop> _condemnedLoot;
+        public Database _database;
 
         //Addon Classes
         Upgrade _upgrader;
@@ -65,6 +66,7 @@ namespace InfServer.Script.GameType_Multi
         private Conquest _cq;
         public Coop _coop;
         public Royale _royale;
+        public RTS _rts;
 
         #region Member Fucntions
         ///////////////////////////////////////////////////
@@ -80,10 +82,14 @@ namespace InfServer.Script.GameType_Multi
             _upgrader = new Upgrade();
             bJackpot = true;
 
+            _database = new Database(_arena);
+
+
             //Load up our gametype handlers
             _cq = new Conquest(_arena, this);
             _coop = new Coop(_arena, this);
             _royale = new Royale(_arena, this);
+            _rts = new RTS(_arena, this);
 
             //Load any modules
             _loot = new Loot(_arena, this);
@@ -99,9 +105,11 @@ namespace InfServer.Script.GameType_Multi
             _isEarlyAccess = false;
 
             if (_arena._name.StartsWith("[Co-Op]"))
-            {
                 _gameType = Settings.GameTypes.Coop;
-            }
+            else if (_arena._name.StartsWith("[Royale]"))
+                _gameType = Settings.GameTypes.Royale;
+            else if (_arena._name.StartsWith("[RTS]"))
+                _gameType = Settings.GameTypes.RTS;
             else
             {
                 Team team1 = _arena.getTeamByName("Titan Militia");
@@ -115,7 +123,6 @@ namespace InfServer.Script.GameType_Multi
             _bMiniMapsEnabled = true;
             _supplyDrops = new List<SupplyDrop>();
             manualTeamSizePick = 0;
-
             return true;
         }
 
@@ -198,6 +205,9 @@ namespace InfServer.Script.GameType_Multi
                 case Settings.GameTypes.Royale:
                     _royale.Poll(now);
                     break;
+                case Settings.GameTypes.RTS:
+                    _rts.Poll(now);
+                    break;
 
                 default:
                     //Do nothing
@@ -222,6 +232,8 @@ namespace InfServer.Script.GameType_Multi
                     return _coop.playerPortal(player, portal);
                 case Settings.GameTypes.Royale:
                     return _royale.playerPortal(player, portal);
+                case Settings.GameTypes.RTS:
+                    return _rts.playerPortal(player, portal);
 
                 default:
                     //Do nothing
@@ -318,6 +330,9 @@ namespace InfServer.Script.GameType_Multi
                 case Settings.GameTypes.Royale:
                     handler = _royale.playerJoinGame(player);
                     break;
+                case Settings.GameTypes.RTS:
+                    handler = _rts.playerJoinGame(player);
+                    break;
 
                 default:
                     //Do nothing
@@ -357,6 +372,9 @@ namespace InfServer.Script.GameType_Multi
                     break;
                 case Settings.GameTypes.Royale:
                     _royale.playerLeave(player);
+                    break;
+                case Settings.GameTypes.RTS:
+                    _rts.playerLeave(player);
                     break;
 
 
@@ -425,6 +443,9 @@ namespace InfServer.Script.GameType_Multi
                 case Settings.GameTypes.Royale:
                     _royale.playerEnterArena(player);
                     break;
+                case Settings.GameTypes.RTS:
+                    _rts.playerEnterArena(player);
+                    break;
 
                 default:
                     //Do nothing
@@ -449,6 +470,9 @@ namespace InfServer.Script.GameType_Multi
                     break;
                 case Settings.GameTypes.Royale:
                     _royale.playerLeaveArena(player);
+                    break;
+                case Settings.GameTypes.RTS:
+                    _rts.playerLeaveArena(player);
                     break;
 
 
@@ -475,6 +499,9 @@ namespace InfServer.Script.GameType_Multi
                     break;
                 case Settings.GameTypes.Royale:
                     _royale.playerSpawn(player, death);
+                    break;
+                case Settings.GameTypes.RTS:
+                    _rts.playerSpawn(player, death);
                     break;
 
                 default:
@@ -973,6 +1000,9 @@ namespace InfServer.Script.GameType_Multi
                 case Settings.GameTypes.Royale:
                     _royale.playerDeath(victim, killer, killType, update);
                     break;
+                case Settings.GameTypes.RTS:
+                    _rts.playerDeath(victim, killer, killType, update);
+                    break;
                 default:
                     //Do nothing
                     break;
@@ -1039,6 +1069,9 @@ namespace InfServer.Script.GameType_Multi
                 case Settings.GameTypes.Royale:
                     _royale.playerPlayerKill(victim, killer);
                     break;
+                case Settings.GameTypes.RTS:
+                    _rts.playerPlayerKill(victim, killer);
+                    break;
 
                 default:
                     //Do nothing
@@ -1067,12 +1100,14 @@ namespace InfServer.Script.GameType_Multi
                 case Settings.GameTypes.Coop:
                     _coop.playerDeathBot(victim, bot);
                     break;
+                case Settings.GameTypes.RTS:
+                   // _rts.playerDeathBot(victim, bot);
+                    break;
 
                 default:
                     //Do nothing
                     break;
             }
-
             return true;
         }
 
@@ -1222,6 +1257,9 @@ namespace InfServer.Script.GameType_Multi
                 case Settings.GameTypes.Royale:
                     _royale.PlayerRepair(player, item);
                     break;
+                case Settings.GameTypes.RTS:
+                    _rts.PlayerRepair(player, item);
+                    break;
 
                 default:
                     //Do nothing
@@ -1245,6 +1283,9 @@ namespace InfServer.Script.GameType_Multi
                 case Settings.GameTypes.Royale:
                     _royale.vehicleDeath(dead, killer);
                     break;
+                case Settings.GameTypes.RTS:
+                    _rts.vehicleDeath(dead, killer);
+                    break;
 
                 default:
                     //Do nothing
@@ -1259,7 +1300,6 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.CommCommand")]
         public bool playerCommCommand(Player player, Player recipient, string command, string payload)
         {
-
                 return true;
         }
 
@@ -1269,6 +1309,17 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.ChatCommand")]
         public bool playerChatCommand(Player player, Player recipient, string command, string payload)
         {
+            switch (_gameType)
+            {
+                case Settings.GameTypes.Conquest:
+                    return _cq.playerChatCommand(player, recipient, command, payload);
+                case Settings.GameTypes.Coop:
+                    return _coop.playerChatCommand(player, recipient, command, payload);
+                case Settings.GameTypes.Royale:
+                    return _royale.playerChatCommand(player, recipient, command, payload);
+                case Settings.GameTypes.RTS:
+                    return _rts.playerChatCommand(player, recipient, command, payload);
+            }
             return true;
         }
 
@@ -1278,42 +1329,6 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.ModCommand")]
         public bool playerModcommand(Player player, Player recipient, string command, string payload)
         {
-            if (command.Equals("fort"))
-            {
-                Fortification newFort = new Fortification(FortificationType.Light, player._state.positionX, player._state.positionY, player._team, _arena);
-            }
-
-            if (command.Equals("royaleclassic"))
-            {
-                if (String.IsNullOrEmpty(payload))
-                    return false;
-
-                if (_arena._name.StartsWith("[Co-Op]"))
-                    return false;
-
-
-                if (String.IsNullOrEmpty(payload))
-                {
-                    player.sendMessage(0, String.Format("Classic Royale Mode is {0}", ((_royale.bClassic) ? "enabled" : "disabled")));
-                    return false;
-                }
-
-                if (payload.Equals("off"))
-                {
-                    _royale.bClassic = false;
-                    _arena.sendArenaMessage("Classic mode has been disabled");
-                    return false;
-                }
-
-                if (payload.Equals("on"))
-                {
-                    _royale.bClassic = true;
-                    _arena.sendArenaMessage("Classic mode has been enabled");
-                    return false;
-                }
-                return false;
-            }
-
             if (command.Equals("gametype"))
             {
                 if (String.IsNullOrEmpty(payload))
@@ -1696,6 +1711,19 @@ namespace InfServer.Script.GameType_Multi
                     player._server._db.send(query);
                     return true;
                 }
+            }
+
+
+            switch (_gameType)
+            {
+                case Settings.GameTypes.Conquest:
+                    return _cq.playerModcommand(player, recipient, command, payload);
+                case Settings.GameTypes.Coop:
+                    return _coop.playerModcommand(player, recipient, command, payload);
+                case Settings.GameTypes.Royale:
+                    return _royale.playerModcommand(player, recipient, command, payload);
+                case Settings.GameTypes.RTS:
+                    return _rts.playerModcommand(player, recipient, command, payload);
             }
 
             return false;

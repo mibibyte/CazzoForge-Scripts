@@ -17,6 +17,7 @@ namespace InfServer.Script.GameType_Multi
     public class Building
     {
         public string _name;
+        public ushort _id;
         public VehInfo _type;
         public Helpers.ObjectState _state;
         public TimeSpan _collectionTime;

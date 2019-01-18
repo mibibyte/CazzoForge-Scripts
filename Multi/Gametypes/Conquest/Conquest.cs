@@ -479,6 +479,17 @@ namespace InfServer.Script.GameType_Multi
         }
         #endregion
 
+        #region Command Handlers
+        public bool playerModcommand(Player player, Player recipient, string command, string payload)
+        {
+            return true;
+        }
+
+        public bool playerChatCommand(Player player, Player recipient, string command, string payload)
+        {
+            return true;
+        }
+        #endregion
 
         #region Updation Calls
 
@@ -588,3 +599,4 @@ namespace InfServer.Script.GameType_Multi
     }
 }
 #endregion
+
