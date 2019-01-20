@@ -82,9 +82,6 @@ namespace InfServer.Script.GameType_Multi
             _upgrader = new Upgrade();
             bJackpot = true;
 
-            _database = new Database(_arena);
-
-
             //Load up our gametype handlers
             _cq = new Conquest(_arena, this);
             _coop = new Coop(_arena, this);
@@ -248,6 +245,15 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.MakeVehicle")]
         public bool playerMakeVehicle(Player player, ItemInfo.VehicleMaker item, short posX, short posY)
         {
+            switch (_gameType)
+            {
+                case Settings.GameTypes.RTS:
+                    return _rts.playerMakeVehicle(player, item, posX, posY);
+
+                default:
+                    //Do nothing
+                    break;
+            }
             return true;
         }
 
@@ -978,6 +984,16 @@ namespace InfServer.Script.GameType_Multi
                 case "Helmet Trader":
                     return tryHelmetTrade(player, computer, product);
             }
+
+            switch (_gameType)
+            {
+                case Settings.GameTypes.RTS:
+                    _rts.playerProduce(player, computer, product);
+                    break;
+                default:
+                    //Do nothing
+                    break;
+            }
             return true;
         }
 
@@ -1285,6 +1301,32 @@ namespace InfServer.Script.GameType_Multi
                     break;
                 case Settings.GameTypes.RTS:
                     _rts.vehicleDeath(dead, killer);
+                    break;
+
+                default:
+                    //Do nothing
+                    break;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Triggered when a vehicle is created
+        /// </summary>
+        /// <remarks>Doesn't catch spectator or dependent vehicle creation</remarks>
+        [Scripts.Event("Vehicle.Creation")]
+        public bool vehicleCreation(Vehicle created, Team team, Player creator)
+        {
+            switch (_gameType)
+            {
+                case Settings.GameTypes.Conquest:
+                    break;
+                case Settings.GameTypes.Coop:
+                    break;
+                case Settings.GameTypes.Royale:
+                    break;
+                case Settings.GameTypes.RTS:
+                    _rts.vehicleCreation(created, team, creator);
                     break;
 
                 default:

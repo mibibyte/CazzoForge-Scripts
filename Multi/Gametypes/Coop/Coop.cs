@@ -449,6 +449,10 @@ namespace InfServer.Script.GameType_Multi
             if (player.findSkill(200) == null)
             player.skillModify(coopskillInfo, 1);
 
+            //Add the skill!
+            if (player.findSkill(39) != null)
+                player._skills.Remove(39);
+
             if (_botDifficulty <= 6)
             {
                 player.sendMessage(2, String.Format("Powerups are enabled for this difficulty, {0}", player._alias));
