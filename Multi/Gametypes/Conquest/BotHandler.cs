@@ -206,7 +206,7 @@ namespace InfServer.Script.GameType_Multi
                         marine._team = team;
                         marine.type = BotType.Marine;
                         marine._cq = this;
-                        marine.init();
+                        marine.init(Settings.GameTypes.Conquest, null);
 
                         marine.Destroyed += delegate (Vehicle bot)
                         {

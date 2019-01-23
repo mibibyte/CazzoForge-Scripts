@@ -17,4 +17,11 @@ namespace InfServer.Script.GameType_Multi
         ExoLight,
         ExoHeavy
     }
+
+    public enum BotLevel
+    {
+        Normal,
+        Adept,
+        Elite
+    }
 }

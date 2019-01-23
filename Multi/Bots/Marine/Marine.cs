@@ -37,6 +37,8 @@ namespace InfServer.Script.GameType_Multi
         protected int _pathTarget;				//The next target node of the path
         protected int _tickLastPath;			//The time at which we last made a path to the player
         public Conquest _cq;
+        public Settings.GameTypes _gameType;
+        public int _tickLastWander;
 
 
         private bool _bPatrolEnemy;
@@ -64,14 +66,18 @@ namespace InfServer.Script.GameType_Multi
 
         }
 
-        public void init()
+        public void init(Settings.GameTypes gameType, Team targetTeam)
         {
             WeaponController.WeaponSettings settings = new WeaponController.WeaponSettings();
             settings.aimFuzziness = 10;
 
             _weapon.setSettings(settings);
 
-            _targetTeam = _arena.ActiveTeams.FirstOrDefault(t => t != _team);
+            _gameType = gameType;
+            _targetTeam = targetTeam;
+            _tickLastWander = Environment.TickCount;
+
+            base.poll();
         }
 
 
@@ -123,17 +129,27 @@ namespace InfServer.Script.GameType_Multi
             }
             else
             {
-                if (_arena._bGameRunning)
+                switch (_gameType)
                 {
-                    if (_arena._flags.Where(f => f.Value.team == _team).Count() > 1)
-                        patrolBetweenFlags(now);
-                    else
-                        pushToEnemyFlag(now);
+                    case Settings.GameTypes.Coop:
+                        {
+                            if (_arena._bGameRunning)
+                            {
+                                if (_arena._flags.Where(f => f.Value.team == _team).Count() > 1)
+                                    patrolBetweenFlags(now);
+                                else
+                                    pushToEnemyFlag(now);
+                            }
+                        }
+                        break;
+                    case Settings.GameTypes.RTS:
+                        {
+                               wander(now);
+                        }
+                        break;
                 }
-                else
-                    base.destroy(false, true);
-            }
 
+            }
             //Handle normal functionality
             return base.poll();
         }

@@ -452,8 +452,11 @@ namespace InfServer.Script.GameType_Multi
                 player._skills.Remove(201);
 
             //Add the skill!
-            if (player.findSkill(39) != null)
-                player._skills.Remove(39);
+            if (player.findSkill(203) != null)
+                player._skills.Remove(203);
+            //Add the skill!
+            if (player.findSkill(202) != null)
+                player._skills.Remove(202);
 
         }
 

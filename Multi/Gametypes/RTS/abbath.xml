@@ -1,0 +1,12 @@
+<playerTable name="abbath">
+  <structures lastID="4">
+    <structure id="1" vehicleID="414" positionX="8893" positionY="4143" health="0" productionID="323" productionAmount="0" productionTime="1/1/0001 12:00:00 AM" productionLevel="1" upgradeCost="0" />
+    <structure id="2" vehicleID="414" positionX="8842" positionY="4066" health="1000" productionID="323" productionAmount="0" productionTime="1/1/0001 12:00:00 AM" productionLevel="1" upgradeCost="0" />
+    <structure id="3" vehicleID="423" positionX="9162" positionY="4190" health="250" productionID="323" productionAmount="0" productionTime="1/1/0001 12:00:00 AM" productionLevel="1" upgradeCost="0" />
+    <structure id="4" vehicleID="421" positionX="9406" positionY="4095" health="250" productionID="323" productionAmount="0" productionTime="1/1/0001 12:00:00 AM" productionLevel="1" upgradeCost="0" />
+  </structures>
+  <items lastID="2">
+  </items>
+  <bots lastID="0">
+  </bots>
+</playerTable>

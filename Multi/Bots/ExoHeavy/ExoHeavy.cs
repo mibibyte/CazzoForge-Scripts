@@ -64,7 +64,7 @@ namespace InfServer.Script.GameType_Multi
 
         }
 
-        public void init()
+        public void init(Settings.GameTypes gameType)
         {
             WeaponController.WeaponSettings settings = new WeaponController.WeaponSettings();
             settings.aimFuzziness = 10;
