@@ -104,6 +104,7 @@ namespace InfServer.Script.GameType_Multi
             if (_arena._bGameRunning)
             {
 
+
                 _storm.Poll(now);
 
                 //Check win conditions
@@ -159,23 +160,7 @@ namespace InfServer.Script.GameType_Multi
             }
             if (_baseScript._tickGameStarting > 0 && now - _baseScript._tickGameStarting > 15000)
             {
-                if (_tickLastReadyCheck == 0)
-                {
-                    _tickLastReadyCheck = now;
-                }
-                else if (now - _tickLastReadyCheck > 2000)
-                {
-                    if (checkForAllPlayersReady())
-                    {
-                        _arena.gameStart();
-                    }
-                    else if (now - _baseScript._tickGameStarting > 30000)
-                    {
-                        _arena.gameStart();
-                    }
-                    _tickLastReadyCheck = now;
-                }                  
-                   // _arena.sendArenaMessage(String.Format("Test Before: {0}", checkForAllPlayersReady()));
+
             }
 
                 return true;
@@ -183,6 +168,7 @@ namespace InfServer.Script.GameType_Multi
 
         public void gameSetup()
         {
+
 
             foreach (Player player in _arena.PlayersIngame)
             {
@@ -228,6 +214,7 @@ namespace InfServer.Script.GameType_Multi
             }
 
             Random randTeamSizePick = new Random();
+
 
             int teamSizePick = teamSizePickList[randTeamSizePick.Next(teamSizePickList.Count)];
             _playersPerTeam = teamSizePick;
@@ -572,9 +559,6 @@ namespace InfServer.Script.GameType_Multi
                 current += separation;
             }
 
-            //Start up the storm!
-            _storm = new Boundary(_arena, 104, 3624, (short)(spawnPoints.Last() + 800), (short)(spawnPoints.First() - 800));
-            _arena.setTicker(1, 3, 60 * 100, "Play area shrinking in: ");
 
             //Clear flags
             _arena.flagReset();
@@ -692,7 +676,7 @@ namespace InfServer.Script.GameType_Multi
             if (_arena._bGameRunning && bDeath)
             {
                 player.spec("spec");
-                pickOutTeam(player);
+
                 if (player._team.ActivePlayerCount == 0)
                     _activeTeams.Remove(player._team);
 
