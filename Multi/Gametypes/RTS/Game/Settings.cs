@@ -33,6 +33,16 @@ namespace InfServer.Script.GameType_Multi
         public const int c_basevillaUpgrade = 50;
         public const double c_villaUpgradeMultiplier = 1.42;
 
+        public const int c_baseIronProduction = 5;
+        public const double c_baseIronProductionInterval = 4; //4 hours
+        public const int c_baseIronMineUpgrade = 50;
+        public const double c_ironMineUpgradeMultiplier = 1.56;
+
+        public const int c_baseScrapProduction = 12;
+        public const double c_baseScrapProductionInterval = 4; //4 hours
+        public const int c_baseScrapUpgrade = 25;
+        public const double c_scrapUpgradeMultiplier = 1.56;
+
         public enum DefenseProduction
         {
             Marine,
@@ -44,7 +54,9 @@ namespace InfServer.Script.GameType_Multi
         {
             Shack,
             House,
-            Villa
+            Villa,
+            Scrapyard,
+            Ironmine
         }
     }
 }

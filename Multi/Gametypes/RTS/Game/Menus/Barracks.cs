@@ -21,7 +21,7 @@ namespace InfServer.Script.GameType_Multi
 
         public bool tryBarracksMenu(Player player, Computer computer, VehInfo.Computer.ComputerProduct product, DefenseProduction type)
         {
-            int idx = Convert.ToInt32(product.Title.Substring(0, 1));
+            int idx = Convert.ToInt32(product.Title.Substring(0, 2));
             switch (idx)
             {
                 //1 - Train 1 Normal ($500)
@@ -89,6 +89,13 @@ namespace InfServer.Script.GameType_Multi
                                 newUnit(BotType.EliteHeavy, null, null, BotLevel.Elite, player._state);
                                 break;
                         }
+                    }
+                    break;
+                //16 - Click For Info
+                case 16:
+                    {
+                        player.sendMessage(0, "&Barracks Info:");
+                        player.sendMessage(0, "The barracks allows you to train new units (bots) that will guard your city.");
                     }
                     break;
             }

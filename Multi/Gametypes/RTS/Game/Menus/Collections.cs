@@ -19,7 +19,7 @@ namespace InfServer.Script.GameType_Multi
     public partial class RTS
     {
 
-        public bool tryResidentialMenu(Player player, Computer computer, VehInfo.Computer.ComputerProduct product, ProductionBuilding buildingType)
+        public bool tryCollectionMenu(Player player, Computer computer, VehInfo.Computer.ComputerProduct product, ProductionBuilding buildingType)
         {
             int idx = Convert.ToInt32(product.Title.Substring(0, 1));
             Structure structure = getStructureByVehicleID(computer._id);
@@ -29,8 +29,8 @@ namespace InfServer.Script.GameType_Multi
                 return false;
 
             int level = structure._productionLevel;
-            int cash = calculateCashProduction(level, buildingType);
-            int cashNextLevel = calculateCashProduction(level + 1, buildingType);
+            int cash = calculateProduction(level, buildingType);
+            int cashNextLevel = calculateProduction(level + 1, buildingType);
             int upgradeNextLevel = calculateUpgradeCost(structure._upgradeCost, buildingType);
 
 
@@ -68,7 +68,7 @@ namespace InfServer.Script.GameType_Multi
                         structure._productionLevel++;
                         structure._productionQuantity = cashNextLevel;
 
-                        player.sendMessage(0, String.Format("&Structure upgraded, Next collection: ${0}", structure._productionQuantity));
+                        player.sendMessage(0, String.Format("&Structure upgraded, Next collection: {0}", structure._productionQuantity));
                         
                     }
                     break;
@@ -78,8 +78,8 @@ namespace InfServer.Script.GameType_Multi
                         player.sendMessage(0, String.Format("&Building Info:"));
                         player.sendMessage(0, String.Format("Current Level: {0}", structure._productionLevel));
                         player.sendMessage(0, String.Format("Upgrade Cost for next level: {0} Iron", structure._upgradeCost));
-                        player.sendMessage(0, String.Format("Next Collection amount: ${0}", structure._productionQuantity));
-                        player.sendMessage(0, String.Format("Next Level Collection amount: ${0}", cashNextLevel));
+                        player.sendMessage(0, String.Format("Next Collection amount: {0}", structure._productionQuantity));
+                        player.sendMessage(0, String.Format("Next Level Collection amount: {0}", cashNextLevel));
 
                         TimeSpan remaining = _baseScript.timeTo(structure._nextProduction.TimeOfDay);
                         player.sendMessage(0, String.Format("Next collection ready in {0} Hour(s) & {1} minute(s)", remaining.Hours, remaining.Minutes));

@@ -21,7 +21,7 @@ namespace InfServer.Script.GameType_Multi
 
         public bool tryHousingProductionMenu(Player player, Computer computer, VehInfo.Computer.ComputerProduct product)
         {
-            int idx = Convert.ToInt32(product.Title.Substring(0, 1));
+            int idx = Convert.ToInt32(product.Title.Substring(0, 2));
             switch (idx)
             {
                 //1 - Shack (75 Iron)
@@ -69,6 +69,14 @@ namespace InfServer.Script.GameType_Multi
                         player.syncState();
                     }
                     break;
+                case 16:
+                    {
+                        player.sendMessage(0, "$ - Factory - Housing");
+                        player.sendMessage(0, "& --- Shack (Produces $850/4hrs at Level 1)");
+                        player.sendMessage(0, "& --- House (Produces $1650/8hrs at Level 1)");
+                        player.sendMessage(0, "& --- Villa (Produces $3250/24hrs at Level 1)");
+                        break;
+                    }
             }
             return false;
         }

@@ -498,17 +498,13 @@ namespace InfServer.Script.GameType_Multi
             switch (_gameType)
             {
                 case Settings.GameTypes.Conquest:
-                    _cq.playerSpawn(player, death);
-                    break;
+                    return _cq.playerSpawn(player, death);
                 case Settings.GameTypes.Coop:
-                    _coop.playerSpawn(player, death);
-                    break;
+                    return _coop.playerSpawn(player, death);
                 case Settings.GameTypes.Royale:
-                    _royale.playerSpawn(player, death);
-                    break;
+                    return _royale.playerSpawn(player, death);
                 case Settings.GameTypes.RTS:
-                    _rts.playerSpawn(player, death);
-                    break;
+                    return _rts.playerSpawn(player, death);
 
                 default:
                     //Do nothing

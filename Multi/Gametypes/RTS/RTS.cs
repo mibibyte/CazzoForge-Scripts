@@ -365,11 +365,11 @@ namespace InfServer.Script.GameType_Multi
                 case "[RTS] Command Center":
                     return tryCommandCenterMenu(player, computer, product);
                 case "[RTS] Shack":
-                    return tryResidentialMenu(player, computer, product, ProductionBuilding.Shack);
+                    return tryCollectionMenu(player, computer, product, ProductionBuilding.Shack);
                 case "[RTS] House":
-                    return tryResidentialMenu(player, computer, product, ProductionBuilding.House);
+                    return tryCollectionMenu(player, computer, product, ProductionBuilding.House);
                 case "[RTS] Villa":
-                    return tryResidentialMenu(player, computer, product, ProductionBuilding.Villa);
+                    return tryCollectionMenu(player, computer, product, ProductionBuilding.Villa);
                 case "[RTS] Marine Barracks":
                     return tryBarracksMenu(player, computer, product, DefenseProduction.Marine);
                 case "[RTS] Ripper Barracks":
@@ -382,6 +382,10 @@ namespace InfServer.Script.GameType_Multi
                     return tryDefenseMenu(player, computer, product);
                 case "[RTS] Factory - Production":
                     return tryProductionMenu(player, computer, product);
+                case "[RTS] Iron Mine":
+                    return tryCollectionMenu(player, computer, product, ProductionBuilding.Ironmine);
+                case "[RTS] Scrapyard":
+                    return tryCollectionMenu(player, computer, product, ProductionBuilding.Scrapyard);
             }
             return true;
         }
@@ -589,6 +593,22 @@ namespace InfServer.Script.GameType_Multi
                         newStruct._upgradeCost = c_basevillaUpgrade;
                         newStruct._productionQuantity = c_baseVillaProduction;
                         newStruct._nextProduction = DateTime.Now.AddHours(c_villaProductionInterval);
+                    }
+                    break;
+                case "[RTS] Scrapyard":
+                    {
+                        newStruct._productionItem = AssetManager.Manager.getItemByID(2026);
+                        newStruct._upgradeCost = c_baseScrapUpgrade;
+                        newStruct._productionQuantity = c_baseScrapProduction;
+                        newStruct._nextProduction = DateTime.Now.AddHours(c_baseScrapProductionInterval);
+                    }
+                    break;
+                case "[RTS] Iron Mine":
+                    {
+                        newStruct._productionItem = AssetManager.Manager.getItemByID(2027);
+                        newStruct._upgradeCost = c_baseIronMineUpgrade;
+                        newStruct._productionQuantity = c_baseIronProduction;
+                        newStruct._nextProduction = DateTime.Now.AddHours(c_baseIronProductionInterval);
                     }
                     break;
                 default:

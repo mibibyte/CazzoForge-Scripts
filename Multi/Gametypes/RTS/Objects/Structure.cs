@@ -51,14 +51,20 @@ namespace InfServer.Script.GameType_Multi
                 case 425:
                     _buildingType = RTS.ProductionBuilding.Villa;
                     break;
+                case 427:
+                    _buildingType = RTS.ProductionBuilding.Ironmine;
+                    break;
+                case 428:
+                    _buildingType = RTS.ProductionBuilding.Scrapyard;
+                    break;
             }
         }
 
         public void produce(Player player)
         {
             int level = _productionLevel;
-            int cash = _game.calculateCashProduction(level, _buildingType);
-            int cashNextLevel = _game.calculateCashProduction(level + 1, _buildingType);
+            int cash = _game.calculateProduction(level, _buildingType);
+            int cashNextLevel = _game.calculateProduction(level + 1, _buildingType);
 
             switch (_buildingType)
             {
@@ -100,6 +106,34 @@ namespace InfServer.Script.GameType_Multi
 
                         //Update our next production.
                         _nextProduction = DateTime.Now.AddHours(RTS.c_villaProductionInterval);
+                        _productionQuantity = cash;
+
+                    }
+                    break;
+                case RTS.ProductionBuilding.Ironmine:
+                    {
+                        player.inventoryModify(_productionItem.id, cash);
+                        player.syncState();
+
+                        player.sendMessage(0, "&Production Collected");
+
+                        //Update our next production.
+                        _nextProduction = DateTime.Now.AddHours(RTS.c_baseIronProductionInterval);
+                        _productionQuantity = cash;
+
+                    }
+                    break;
+                case RTS.ProductionBuilding.Scrapyard:
+                    {
+
+                        player.inventoryModify(_productionItem.id, cash);
+                        player.syncState();
+
+
+                        player.sendMessage(0, "&Production Collected");
+
+                        //Update our next production.
+                        _nextProduction = DateTime.Now.AddHours(RTS.c_baseScrapProductionInterval);
                         _productionQuantity = cash;
 
                     }

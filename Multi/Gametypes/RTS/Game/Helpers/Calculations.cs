@@ -18,7 +18,7 @@ namespace InfServer.Script.GameType_Multi
     ///////////////////////////////////////////////////////
     public partial class RTS
     {
-        public int calculateCashProduction(int level, ProductionBuilding buildingType)
+        public int calculateProduction(int level, ProductionBuilding buildingType)
         {
             int result = 0;
 
@@ -33,6 +33,12 @@ namespace InfServer.Script.GameType_Multi
                     break;
                 case ProductionBuilding.Villa:
                     result = c_baseVillaProduction * level;
+                    break;
+                case ProductionBuilding.Ironmine:
+                    result = c_baseIronProduction * level;
+                    break;
+                case ProductionBuilding.Scrapyard:
+                    result = c_baseScrapProduction * level;
                     break;
             }
             
@@ -56,6 +62,12 @@ namespace InfServer.Script.GameType_Multi
                     break;
                 case ProductionBuilding.Villa:
                     result = (int)(currentCost * c_villaUpgradeMultiplier);
+                    break;
+                case ProductionBuilding.Scrapyard:
+                    result = (int)(currentCost * c_scrapUpgradeMultiplier);
+                    break;
+                case ProductionBuilding.Ironmine:
+                    result = (int)(currentCost * c_ironMineUpgradeMultiplier);
                     break;
             }
 

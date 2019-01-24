@@ -426,8 +426,9 @@ namespace InfServer.Script.GameType_Multi
         {
         }
 
-        public void playerSpawn(Player player, bool death)
+        public bool playerSpawn(Player player, bool death)
         {
+            return true;
         }
 
         public void playerEnterArena(Player player)

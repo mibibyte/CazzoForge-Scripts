@@ -21,7 +21,7 @@ namespace InfServer.Script.GameType_Multi
 
         public bool tryDefenseMenu(Player player, Computer computer, VehInfo.Computer.ComputerProduct product)
         {
-            int idx = Convert.ToInt32(product.Title.Substring(0, 1));
+            int idx = Convert.ToInt32(product.Title.Substring(0, 2));
 
             switch (idx)
             {
@@ -85,8 +85,16 @@ namespace InfServer.Script.GameType_Multi
                         player.syncState();
                     }
                     break;
+                //16 - Click For Info
+                case 16:
+                    {
+                        player.sendMessage(0, "$ - Factory - Defense");
+                        player.sendMessage(0, "& --- Marine Barracks (Allows you to train Marine bots)");
+                        player.sendMessage(0, "& --- Ripper Barracks (Allows you to train Ripper bots)");
+                        player.sendMessage(0, "& --- All other options should be self explanatory");
+                    }
+                    break;
 
-                    
             }
             return false;
         }

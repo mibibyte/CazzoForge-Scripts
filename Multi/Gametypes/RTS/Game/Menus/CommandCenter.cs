@@ -21,7 +21,7 @@ namespace InfServer.Script.GameType_Multi
 
         public bool tryCommandCenterMenu(Player player, Computer computer, VehInfo.Computer.ComputerProduct product)
         {
-            int idx = Convert.ToInt32(product.Title.Substring(0, 1));
+            int idx = Convert.ToInt32(product.Title.Substring(0, 2));
             switch (idx)
             {
                 //1 - Factory - Production (125 Iron)
@@ -82,6 +82,33 @@ namespace InfServer.Script.GameType_Multi
                         player.inventoryModify(200, 1);
                         player.sendMessage(0, "1 [RTS] Power Station Kit has been added to your inventory");
                         player.syncState();
+                    }
+                    break;
+                //16 - Click For Info
+                case 5:
+                    {
+                        player.sendMessage(0, "&Command Center Info:");
+                        player.sendMessage(0, "The Command Center is the center of operation for any city/base. It also is your warppoint from which you'll spawn when exiting the DS. In it you will find the following options:");
+                        player.sendMessage(0, "$ - Factory - Production");
+                        player.sendMessage(0, "& --- Refinery - Iron (Refines scrap metal into Refined Iron)");
+                        player.sendMessage(0, "& --- Iron Mine (Produces Refined Iron at hourly intervals)");
+                        player.sendMessage(0, "& --- Scrapyard (Produces Scrap Metal at hourly intervals)");
+                        player.sendMessage(0, "$ - Factory - Defense");
+                        player.sendMessage(0, "& --- Marine Barracks (Allows you to train Marine bots)");
+                        player.sendMessage(0, "& --- Ripper Barracks (Allows you to train Ripper bots)");
+                        player.sendMessage(0, "& --- All other options should be self explanatory");
+                        player.sendMessage(0, "$ - Factory - Housing");
+                        player.sendMessage(0, "& --- Shack (Produces $850/4hrs at Level 1)");
+                        player.sendMessage(0, "& --- House (Produces $1650/8hrs at Level 1)");
+                        player.sendMessage(0, "& --- Villa (Produces $3250/24hrs at Level 1)");
+                        player.sendMessage(0, "$ - Power Station (Power stations are used to power nearby buildings, " +
+                            "these must be placed before any other building is constructed with exception of the Command Center");
+                        break;
+                    }
+                //Return to DS
+                case 6:
+                    {
+                        player.warp(1924 * 16, 347 * 16);
                     }
                     break;
             }
