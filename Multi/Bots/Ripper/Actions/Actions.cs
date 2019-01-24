@@ -263,6 +263,11 @@ namespace InfServer.Script.GameType_Multi
 
         public void wander(int now)
         {
+
+            if (now - _tickLastWander < 6000)
+                return;
+
+
             if (_targetPoint == null)
                 _targetPoint = getTargetPoint();
 
@@ -274,6 +279,7 @@ namespace InfServer.Script.GameType_Multi
             if (distance < patrolDist)
             {
                 _targetPoint = null;
+                _tickLastWander = now;
                 return;
             }
 
@@ -309,26 +315,20 @@ namespace InfServer.Script.GameType_Multi
         {
             Helpers.ObjectState target = new Helpers.ObjectState();
 
-            Arena.FlagState targetFlag;
-            List<Arena.FlagState> flags;
+            Vehicle potentialTarget = _arena.getVehiclesInRange(_state.positionX, _state.positionY, 3000).
+                FirstOrDefault(v => v._type.Name == "[RTS] Marine Barracks");
 
-            flags = _arena._flags.Values.OrderBy(f => f.posX).ToList();
-            int flagCount = flags.Where(f => f.team == _team).Count();
-
-
-            if (flagCount > 2)
-                targetFlag = _arena._flags.Values.OrderBy(f => f.posX).Where(f => f.team == _team).First();
-            else
-                targetFlag = flags.Where(f => f.team != _team).Last();
+            if (potentialTarget == null)
+                return null;
 
             int blockedAttempts = 30;
             short pX;
             short pY;
             while (true)
             {
-                pX = targetFlag.posX;
-                pY = targetFlag.posY;
-                Helpers.randomPositionInArea(_arena, 3000, ref pX, ref pY);
+                pX = potentialTarget._state.positionX;
+                pY = potentialTarget._state.positionY;
+                Helpers.randomPositionInArea(_arena, 1000, ref pX, ref pY);
                 if (_arena.getTile(pX, pY).Blocked)
                 {
                     blockedAttempts--;
@@ -338,7 +338,7 @@ namespace InfServer.Script.GameType_Multi
                     continue;
                 }
 
-                target.positionX = targetFlag.posX;
+                target.positionX = pX;
                 target.positionY = pY;
                 break;
             }

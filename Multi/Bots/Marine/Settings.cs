@@ -24,7 +24,7 @@ namespace InfServer.Script.GameType_Multi
         public float farDist = 3.6f;                        //The distance from the player where we actively pursue them
         public float runDist = 2.6f;                        //The distance from the player where we run away!
         public float shortDist = 3.0f;                      //The distance from the player where we keep our distance
-        public float patrolDist = 5.1f;                     //The distance from our patrol points where we turn around and pursue the other point
+        public float patrolDist = 1.1f;                     //The distance from our patrol points where we turn around and pursue the other point
         public float retreatDist = 6.1f;                     //The distance from our patrol points where we turn around and pursue the other point
         public float fireDist = 5.8f;                      //The distance from the player where we keep our distance
         private const int c_MaxPath = 350;

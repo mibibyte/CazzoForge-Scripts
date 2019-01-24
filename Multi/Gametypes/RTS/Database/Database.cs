@@ -18,53 +18,82 @@ using Assets;
 
 namespace InfServer.Script.GameType_Multi
 {
-    public class Database
+    public partial class Database
     {
-        public Dictionary<ushort, Building> _buildings;
+        public Dictionary<string, Structure> _buildings;
         private Arena _arena;
+        private RTS _game;
 
-        public Database(Arena arena)
+        public Dictionary<string, XmlDocument> _data;
+        private XmlDocument _buildingData;
+
+        public Database(Arena arena, RTS game)
         {
             _arena = arena;
+            _data = new Dictionary<string, XmlDocument>();
+            _game = game;
         }
 
-        public void loadBuildings(string player, Team team)
+        public void loadXML()
         {
-            _buildings = new Dictionary<ushort, Building>();
-            Building building;
-            XmlDocument Doc = new XmlDocument();
-            Doc.Load(System.Environment.CurrentDirectory + "/Data/RTS/Buildings/" + player + ".xml");
+            Log.write("Loading Data from XML Database...");
 
-            XmlNode header = Doc.SelectSingleNode("buildingTable");
+            string[] playerTables = Directory.GetFiles(System.Environment.CurrentDirectory + "/Data/RTS/PlayerData/", "*.xml");
 
-            foreach (XmlNode Node in Doc.SelectNodes("buildingTable/building"))
+            foreach (string table in playerTables)
             {
-                foreach (XmlNode child in Node.ChildNodes)
-                {
-                    building = new Building();
-                    building._id = Convert.ToUInt16(child.Attributes["id"].Value);
-                    building._name = child.Attributes["name"].Value;
-                    building._type = AssetManager.Manager.getVehicleByID(Convert.ToInt32(child.Attributes["vehicleID"].Value));
+                XmlDocument newTable = new XmlDocument();
 
-                    building._state = new Helpers.ObjectState();
-                    building._state.positionX = Convert.ToInt16(child.Attributes["positionX"].Value);
-                    building._state.positionY = Convert.ToInt16(child.Attributes["positionY"].Value);
-                    building._state.health = Convert.ToInt16(child.Attributes["health"].Value);
+                //Load the data table
+                newTable.Load(table);
 
-                    //Add it
-                    _buildings.Add(building._id, building);
-                }
+                //Grab the header
+                XmlNode header = newTable.SelectSingleNode("playerTable");
+
+                //Add it!
+                _data.Add(header.Attributes["name"].Value.ToLower(), newTable);
             }
+        }
 
+        public bool tableExists(string key)
+        {
+            if (!_data.ContainsKey(key))
+                return false;
+            else
+                return true;
+        }
 
+        public void createTable(string key)
+        {
+            string defaultFile = System.Environment.CurrentDirectory + "/Data/RTS/default.xml";
+            string newFile = System.Environment.CurrentDirectory + "/Data/RTS/PlayerData/" + key + ".xml";
 
-            foreach (Building b in _buildings.Values)
-            {
-                Vehicle newVeh = _arena.newVehicle(b._type, team, null, b._state);
+            System.IO.File.Copy(defaultFile, newFile);
 
-                if (newVeh == null)
-                    Log.write("[RTS] Could not spawn vehicle");
-            }
+            XmlDocument newTable = new XmlDocument();
+
+            //Load the data table
+            newTable.Load(newFile);
+
+            //Grab the header
+            XmlNode header = newTable.SelectSingleNode("playerTable");
+            header.Attributes["name"].Value = key;
+
+            //Save it
+            newTable.Save(newFile);
+            _data[key] = newTable;
+        }
+
+        public void saveData(string key)
+        {
+            _data[key].Save(System.Environment.CurrentDirectory + "/Data/RTS/PlayerData/" + key + ".xml");
+
+            reloadData(key);
+        }
+
+        public void reloadData(string key)
+        {
+            _data[key].Load(System.Environment.CurrentDirectory + "/Data/RTS/PlayerData/" + key + ".xml");
         }
     }
 }

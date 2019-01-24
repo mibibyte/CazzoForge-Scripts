@@ -156,7 +156,7 @@ namespace InfServer.Script.GameType_Multi
 
                         gunship._team = team;
                         gunship.type = BotType.Dropship;
-                        gunship.init(state, _baseScript, target, owner);
+                        gunship.init(state, _baseScript, target, owner, Settings.GameTypes.Coop);
 
                         gunship.Destroyed += delegate (Vehicle bot)
                         {
@@ -213,7 +213,7 @@ namespace InfServer.Script.GameType_Multi
 
                         heavy._team = team;
                         heavy.type = BotType.EliteHeavy;
-                        heavy.init();
+                        heavy.init(Settings.GameTypes.Coop, _team);
 
                         if (hpMultiplier != 0.0)
                         {
@@ -254,7 +254,7 @@ namespace InfServer.Script.GameType_Multi
 
                         elitemarine._team = team;
                         elitemarine.type = BotType.EliteHeavy;
-                        elitemarine.init();
+                        elitemarine.init(Settings.GameTypes.Coop, _team);
 
                         if (hpMultiplier != 0.0)
                         {
@@ -324,7 +324,7 @@ namespace InfServer.Script.GameType_Multi
 
                         marine._team = team;
                         marine.type = BotType.Marine;
-                        marine.init();
+                        marine.init(Settings.GameTypes.Coop, _team);
                         marine.Destroyed += delegate (Vehicle bot)
                         {
                             _bots.Remove((Bot)bot);
@@ -381,7 +381,7 @@ namespace InfServer.Script.GameType_Multi
 
                         ripper._team = team;
                         ripper.type = BotType.Ripper;
-                        ripper.init();
+                        ripper.init(Settings.GameTypes.Coop, _team);
                         ripper.Destroyed += delegate (Vehicle bot)
                         {
                             _bots.Remove((Bot)bot);
@@ -409,7 +409,7 @@ namespace InfServer.Script.GameType_Multi
 
                         exo._team = team;
                         exo.type = BotType.ExoLight;
-                        exo.init();
+                        exo.init(Settings.GameTypes.Coop);
 
                         
                         if (hpMultiplier != 0.0)
@@ -452,7 +452,7 @@ namespace InfServer.Script.GameType_Multi
 
                         exo._team = team;
                         exo.type = BotType.ExoHeavy;
-                        exo.init();
+                        exo.init(Settings.GameTypes.Coop);
 
                         if (hpMultiplier != 0.0)
                         {

@@ -82,14 +82,12 @@ namespace InfServer.Script.GameType_Multi
             _upgrader = new Upgrade();
             bJackpot = true;
 
-            _database = new Database(_arena);
-
-
             //Load up our gametype handlers
             _cq = new Conquest(_arena, this);
             _coop = new Coop(_arena, this);
             _royale = new Royale(_arena, this);
             _rts = new RTS(_arena, this);
+            
 
             //Load any modules
             _loot = new Loot(_arena, this);
@@ -99,7 +97,7 @@ namespace InfServer.Script.GameType_Multi
             _condemnedLoot = new Dictionary<ushort, LootDrop>();
 
             //Default to Conquest
-            _gameType = Settings.GameTypes.Conquest;
+            _gameType = Settings.GameTypes.Royale;
             _minPlayers = 1;
 
             _isEarlyAccess = false;
@@ -108,7 +106,7 @@ namespace InfServer.Script.GameType_Multi
                 _gameType = Settings.GameTypes.Coop;
             else if (_arena._name.StartsWith("[Royale]"))
                 _gameType = Settings.GameTypes.Royale;
-            else if (_arena._name.StartsWith("[RTS]"))
+            else if (_arena._name.ToLower().StartsWith("[rts]"))
                 _gameType = Settings.GameTypes.RTS;
             else
             {
@@ -227,7 +225,6 @@ namespace InfServer.Script.GameType_Multi
             {
                 case Settings.GameTypes.Conquest:
                     return _cq.playerPortal(player, portal);
-
                 case Settings.GameTypes.Coop:
                     return _coop.playerPortal(player, portal);
                 case Settings.GameTypes.Royale:
@@ -248,6 +245,15 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.MakeVehicle")]
         public bool playerMakeVehicle(Player player, ItemInfo.VehicleMaker item, short posX, short posY)
         {
+            switch (_gameType)
+            {
+                case Settings.GameTypes.RTS:
+                    return _rts.playerMakeVehicle(player, item, posX, posY);
+
+                default:
+                    //Do nothing
+                    break;
+            }
             return true;
         }
 
@@ -709,12 +715,36 @@ namespace InfServer.Script.GameType_Multi
         }
 
         /// <summary>
+        /// Triggered when a player requests to drop an item
+        /// </summary>
+        [Scripts.Event("Player.ItemDrop")]
+        public bool playerItemDrop(Player player, ItemInfo item, ushort quantity)
+        {
+            //Defer to our current gametype handler!
+            switch (_gameType)
+            {
+                case Settings.GameTypes.Conquest:
+                    break;
+                case Settings.GameTypes.Coop:
+                    break;
+                case Settings.GameTypes.RTS:
+                    return _rts.playerItemDrop(player, item, quantity);
+
+                default:
+                    //Do nothing
+                    break;
+            }
+            return true;
+        }
+
+        /// <summary>
         /// Triggered when a player requests to pick up an item
         /// </summary>
         [Scripts.Event("Player.ItemPickup")]
         public bool playerItemPickup(Player player, Arena.ItemDrop drop, ushort quantity)
         {
             int now = Environment.TickCount;
+
 
             //Private loot?
             if (_privateLoot.ContainsKey(drop.id))
@@ -759,6 +789,23 @@ namespace InfServer.Script.GameType_Multi
                 player.inventoryModify(multi.slots[1].value, 150);
 
             }
+
+            //Defer to our current gametype handler!
+            switch (_gameType)
+            {
+                case Settings.GameTypes.Conquest:
+                    break;
+                case Settings.GameTypes.Coop:
+                    break;
+                case Settings.GameTypes.RTS:
+                    _rts.playerItemPickup(player, drop, quantity);
+                    break;
+
+                default:
+                    //Do nothing
+                    break;
+            }
+
             return false;
         }
 
@@ -978,6 +1025,16 @@ namespace InfServer.Script.GameType_Multi
                 case "Helmet Trader":
                     return tryHelmetTrade(player, computer, product);
             }
+
+            switch (_gameType)
+            {
+                case Settings.GameTypes.RTS:
+                    _rts.playerProduce(player, computer, product);
+                    break;
+                default:
+                    //Do nothing
+                    break;
+            }
             return true;
         }
 
@@ -1144,6 +1201,10 @@ namespace InfServer.Script.GameType_Multi
                     case Settings.GameTypes.Coop:
                         _coop.botDeath(dead, killer);
                         break;
+                    case Settings.GameTypes.RTS:
+                        _rts.botDeath(dead, killer);
+                        break;
+                        
 
                     default:
                         //Do nothing
@@ -1285,6 +1346,32 @@ namespace InfServer.Script.GameType_Multi
                     break;
                 case Settings.GameTypes.RTS:
                     _rts.vehicleDeath(dead, killer);
+                    break;
+
+                default:
+                    //Do nothing
+                    break;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Triggered when a vehicle is created
+        /// </summary>
+        /// <remarks>Doesn't catch spectator or dependent vehicle creation</remarks>
+        [Scripts.Event("Vehicle.Creation")]
+        public bool vehicleCreation(Vehicle created, Team team, Player creator)
+        {
+            switch (_gameType)
+            {
+                case Settings.GameTypes.Conquest:
+                    break;
+                case Settings.GameTypes.Coop:
+                    break;
+                case Settings.GameTypes.Royale:
+                    break;
+                case Settings.GameTypes.RTS:
+                    _rts.vehicleCreation(created, team, creator);
                     break;
 
                 default:

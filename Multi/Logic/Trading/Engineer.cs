@@ -121,6 +121,24 @@ namespace InfServer.Script.GameType_Multi
                         player.syncState();
                     }
                     break;
+                //3 - Command Center Kit(300 Iron)
+                case 3:
+                    {
+                        if (player.getInventoryAmount(2027) < 300)
+                        {
+                            player.sendMessage(-1, "Engineer> I'm sorry, you don't have enough iron for this option");
+                            return false;
+                        }
+
+                        player.inventoryModify(2027, -300);
+                        player.inventoryModify(191, 1);
+                        player.sendMessage(0, "1 [RTS] Command Center Kit has been added to your inventory");
+                        player.syncState();
+
+                        player.sendMessage(0, String.Format("&To use this item, you must type ?go [RTS] {0} to start your city. Good luck!", player._alias));
+                    }
+                    break;
+    
             }
             return false;
         }

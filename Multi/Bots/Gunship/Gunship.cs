@@ -77,7 +77,7 @@ namespace InfServer.Script.GameType_Multi
             _shotsFired = new List<Projectile>();
         }
 
-        public void init(Helpers.ObjectState spawn, Script_Multi script, Vehicle target, Player owner)
+        public void init(Helpers.ObjectState spawn, Script_Multi script, Vehicle target, Player owner, Settings.GameTypes gameType)
         {
             _script = script;
             spawn.positionZ = 0;
