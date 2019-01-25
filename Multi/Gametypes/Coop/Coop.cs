@@ -401,6 +401,9 @@ namespace InfServer.Script.GameType_Multi
         /// <returns></returns>
         public bool botDeath(Bot dead, Player killer)
         {
+            if (killer != null)
+                killer.ZoneStat1 = killer.Bounty;
+
             return true;
         }
 
@@ -426,8 +429,36 @@ namespace InfServer.Script.GameType_Multi
         {
         }
 
-        public void playerSpawn(Player player, bool death)
+        public bool playerSpawn(Player player, bool death)
         {
+            
+                //Did he die?
+                if (death)
+                {    //Trigger the appropriate event
+                    if (player._bEnemyDeath)
+                        Logic_Assets.RunEvent(player, _arena._server._zoneConfig.EventInfo.killedByEnemy);
+                    else
+                        Logic_Assets.RunEvent(player, _arena._server._zoneConfig.EventInfo.killedByTeam);
+
+                    //Reset flags to unowned state?
+                    if (player._arena.getTerrain(player._state.positionX,  player._state.positionY).safety
+                        && !_arena._server._zoneConfig.flag.allowSafety)
+                        _arena.flagResetPlayer(player, true);
+
+                    //Reset his bounty
+                    player.Bounty = _arena._server._zoneConfig.bounty.start;
+                    //Update his client to reflect bty change
+                    player.syncState();
+                }
+            
+            _arena.sendArenaMessage("TEST");
+            if (!death)
+            {
+                _arena.sendArenaMessage("TEST2");
+                player.Bounty = player.ZoneStat1;
+            }
+                player.Bounty = player.ZoneStat1;
+            return false;
         }
 
         public void playerEnterArena(Player player)
@@ -526,7 +557,11 @@ namespace InfServer.Script.GameType_Multi
 
         public void playerDeath(Player victim, Player killer, Helpers.KillType killType, CS_VehicleDeath update)
         {
-         
+            victim.ZoneStat1 = 100;
+
+            if (killer != null)
+                killer.ZoneStat1 = killer.Bounty;
+
         }
         #endregion
 

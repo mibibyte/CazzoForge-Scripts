@@ -501,8 +501,7 @@ namespace InfServer.Script.GameType_Multi
                     _cq.playerSpawn(player, death);
                     break;
                 case Settings.GameTypes.Coop:
-                    _coop.playerSpawn(player, death);
-                    break;
+                    return _coop.playerSpawn(player, death);
                 case Settings.GameTypes.Royale:
                     _royale.playerSpawn(player, death);
                     break;

@@ -82,7 +82,7 @@ namespace InfServer.Script.GameType_Multi
 
             manualTeamSizePick = 0;
             bClassic = false; // Turn on looting.
-            bGameLocked = true;
+            bGameLocked = false;
             bAllPlayersReady = false;
         }
 
@@ -120,14 +120,14 @@ namespace InfServer.Script.GameType_Multi
                 }
             }
 
-            if (_arena._bGameRunning && playing < _minPlayers && _arena._bIsPublic && _victoryTeam == null)
+            if (_arena._bGameRunning && playing < 2 && _arena._bIsPublic && _victoryTeam == null)
             {
                 _baseScript.bJackpot = false;
                 //Stop the game and reset voting
                 _arena.gameEnd();
 
             }
-            if (playing < _minPlayers && _arena._bIsPublic)
+            if (playing < 2 && _arena._bIsPublic)
             {
                 _baseScript._tickGameStarting = 0;
                 _arena.setTicker(1, 3, 0, "Not Enough Players");
@@ -314,20 +314,20 @@ namespace InfServer.Script.GameType_Multi
                             if (player._team._name == _victoryTeam._name)
                             {
                                 bonusCash = Convert.ToInt32(jackpot * 0.5);
-                                bonusExp = Convert.ToInt32(jackpot * 1);
+                                bonusExp = Convert.ToInt32(jackpot * 0.5);
                                 bonusPoints = Convert.ToInt32(jackpot * 1);
                             }
                             else
                             {
                                 bonusCash = Convert.ToInt32((jackpot * 0.5) / 4);
-                                bonusExp = Convert.ToInt32((jackpot * 1) / 4);
+                                bonusExp = Convert.ToInt32((jackpot * 0.5) / 4);
                                 bonusPoints = Convert.ToInt32((jackpot * 1) / 4);
                             }
                         }
                         else
                         {
                             bonusCash = Convert.ToInt32((jackpot * 0.5) / 4);
-                            bonusExp = Convert.ToInt32((jackpot * 1) / 4);
+                            bonusExp = Convert.ToInt32((jackpot * 0.5) / 4);
                             bonusPoints = Convert.ToInt32((jackpot * 1) / 4);
                         }
 
@@ -335,8 +335,9 @@ namespace InfServer.Script.GameType_Multi
 
                         if (Script_Multi._bPvpHappyHour)
                         {
+
+                            player.sendMessage(0, String.Format("Additional PvP Happy Hour Bonus: (Cash={0})", bonusCash));
                             bonusCash += bonusCash;
-                            player.sendMessage(0, String.Format("PvP Happy Hour Bonus: (Cash={0})", bonusCash));
                         }
 
                         player.Cash += bonusCash;
@@ -403,8 +404,9 @@ namespace InfServer.Script.GameType_Multi
                         player.sendMessage(0, String.Format("Tournament Bonus: (Points={2} Cash={0} Experience={1} )", bonusCash, bonusExp, bonusPoints));
                         if (Script_Multi._bPvpHappyHour)
                         {
+             
+                            player.sendMessage(0, String.Format("Additional PvP Happy Hour Bonus: (Cash={0})", bonusCash));
                             bonusCash += bonusCash;
-                            player.sendMessage(0, String.Format("PvP Happy Hour Bonus: (Cash={0})", bonusCash));
                         }
                         player.Cash += bonusCash;
                         player.Experience += bonusExp;
@@ -628,7 +630,7 @@ namespace InfServer.Script.GameType_Multi
 
             foreach (Player player in _arena.Players)
             {
-                if (!player.IsDead && !player.IsSpectator)
+                if (!player.IsDead && !player.IsSpectator && _arena.PlayerCount >= _minPlayers)
                     player.warp(1924*16, 347*16);
 
                 foreach (ItemInfo item in removes)
@@ -637,17 +639,26 @@ namespace InfServer.Script.GameType_Multi
 
                 if (player._team._name == "Red" || player._team._name == "Blue")
                 {
-                    pickTeam(player);
-                    continue;
+                    if (_arena.PlayerCount >= _minPlayers)
+                    {
+                        pickTeam(player);
+                        continue;
+                    }
+                    
+                }
+                else if (_arena.PlayerCount < _minPlayers)
+                {
+                    pickOutTeam(player);
                 }
 
-                if (player._team._name == "spec")
+                    if (player._team._name == "spec")
                     continue;
 
                 if (!player.IsSpectator)
                     continue;
 
-                player.unspec(player._team);
+                if (_arena.PlayerCount >= _minPlayers)
+                    player.unspec(player._team);
                 
             }
 
@@ -729,11 +740,15 @@ namespace InfServer.Script.GameType_Multi
                 player.sendMessage(0, "A Royale Tournament is currently going on. You will be automatically entered in the next one. Feel free to play Red vs Blue until then.");
             }
               
+            else if (_baseScript._tickGameStarting == 0 && _arena.PlayerCount < _minPlayers)
+            {
+                pickOutTeam(player);
+                player.sendMessage(0, "A Royale Tournament will start when there are 7 or more players. Feel free to play Red vs Blue until then.");
+            }
             else
                 pickTeam(player);
 
-            if (_minPlayers < 7)
-                player.sendMessage(0, "A Royale Tournament will start when there are 7 or more players. Feel free to play Red vs Blue until then.");
+
 
             if (player.getInventoryAmount(188) == 0) // Check for Royale Armor and add it.
                 player.inventoryModify(188, 1);
