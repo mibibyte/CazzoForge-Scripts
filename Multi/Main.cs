@@ -1415,6 +1415,35 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.ModCommand")]
         public bool playerModcommand(Player player, Player recipient, string command, string payload)
         {
+
+            if (command.Equals("bounty"))
+            {
+                if (recipient == null)
+                {
+                    player.sendMessage(-1, "Command must be sent in PM");
+                    return false;
+                }
+
+                if (String.IsNullOrEmpty(payload))
+                {
+                    player.sendMessage(-1, "Must specify an amount");
+                    return false;
+                }
+
+                int amount;
+                if (Int32.TryParse(payload, out amount))
+                {
+                    recipient.Bounty = amount;
+                    recipient.syncState();
+                    return true;
+                }
+                else
+                {
+                    player.sendMessage(-1, "Invalid amount specified");
+                    return false;
+                }
+
+            }
             if (command.Equals("gametype"))
             {
                 if (String.IsNullOrEmpty(payload))

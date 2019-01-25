@@ -350,8 +350,8 @@ namespace InfServer.Script.GameType_Multi
         {
             Helpers.ObjectState target = new Helpers.ObjectState();
 
-            Vehicle potentialTarget = _arena.getVehiclesInRange(_state.positionX, _state.positionY, 3000).
-                FirstOrDefault(v => v._type.Name == "[RTS] Marine Barracks");
+            Vehicle potentialTarget = _arena.getVehiclesInRange(_state.positionX, _state.positionY, 5000).
+                FirstOrDefault(v => v._type.Name == "[RTS] Ripper Barracks");
 
             if (potentialTarget == null)
                 return null;
