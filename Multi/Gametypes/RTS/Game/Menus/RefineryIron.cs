@@ -95,7 +95,7 @@ namespace InfServer.Script.GameType_Multi
 
                         player.inventoryModify(2027, 50);
                         player.inventoryModify(2026, -30);
-                        player.sendMessage(0, "20 Iron has been added to your inventory");
+                        player.sendMessage(0, "50 Iron has been added to your inventory");
                         player.syncState();
                     }
                     break;

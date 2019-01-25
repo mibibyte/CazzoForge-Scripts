@@ -406,14 +406,14 @@ namespace InfServer.Script.GameType_Multi
             {
                 if (player._team != _team1)
                 {
-                    player.unspec(_team1);
+                    player.joinTeam(_team1);
                 }
             }
             else
             {
                 if (player._team != _team2)
                 {
-                    player.unspec(_team2);
+                    player.joinTeam(_team2);
                 }
             }
         }
@@ -422,8 +422,9 @@ namespace InfServer.Script.GameType_Multi
         {
         }
 
-        public void playerSpawn(Player player, bool death)
+        public bool playerSpawn(Player player, bool death)
         {
+            return true;
         }
 
         public void playerEnterArena(Player player)

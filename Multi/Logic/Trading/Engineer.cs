@@ -121,16 +121,16 @@ namespace InfServer.Script.GameType_Multi
                         player.syncState();
                     }
                     break;
-                //3 - Command Center Kit(300 Iron)
+                //3 - Command Center Kit(150 Iron)
                 case 3:
                     {
-                        if (player.getInventoryAmount(2027) < 300)
+                        if (player.getInventoryAmount(2027) < 150)
                         {
                             player.sendMessage(-1, "Engineer> I'm sorry, you don't have enough iron for this option");
                             return false;
                         }
 
-                        player.inventoryModify(2027, -300);
+                        player.inventoryModify(2027, -150);
                         player.inventoryModify(191, 1);
                         player.sendMessage(0, "1 [RTS] Command Center Kit has been added to your inventory");
                         player.syncState();

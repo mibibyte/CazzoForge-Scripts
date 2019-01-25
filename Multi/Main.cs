@@ -366,7 +366,6 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.Leave")]
         public bool playerLeave(Player player)
         {
-
             //Defer to our current gametype handler!
             switch (_gameType)
             {
@@ -498,16 +497,13 @@ namespace InfServer.Script.GameType_Multi
             switch (_gameType)
             {
                 case Settings.GameTypes.Conquest:
-                    _cq.playerSpawn(player, death);
-                    break;
+                    return _cq.playerSpawn(player, death);
                 case Settings.GameTypes.Coop:
                     return _coop.playerSpawn(player, death);
                 case Settings.GameTypes.Royale:
-                    _royale.playerSpawn(player, death);
-                    break;
+                    return _royale.playerSpawn(player, death);
                 case Settings.GameTypes.RTS:
-                    _rts.playerSpawn(player, death);
-                    break;
+                    return _rts.playerSpawn(player, death);
 
                 default:
                     //Do nothing
@@ -1044,6 +1040,9 @@ namespace InfServer.Script.GameType_Multi
         [Scripts.Event("Player.Death")]
         public bool playerDeath(Player victim, Player killer, Helpers.KillType killType, CS_VehicleDeath update)
         {
+            //Reset stored bounty
+            victim.ZoneStat1 = 0;
+           
             //Defer to our current gametype handler!
             switch (_gameType)
             {
@@ -1085,6 +1084,7 @@ namespace InfServer.Script.GameType_Multi
             //Update stats
             killer.Kills++;
             victim.Deaths++;
+            killer.ZoneStat1 = killer.Bounty;
 
             //Update our kill streak
             UpdateKiller(killer);
@@ -1957,7 +1957,6 @@ namespace InfServer.Script.GameType_Multi
         #endregion
 
         #region Custom Calls
-
         public void AllowPrivateTeams(bool bAllow)
         {
             _arena._server._zoneConfig.arena.allowManualTeamSwitch = bAllow;
