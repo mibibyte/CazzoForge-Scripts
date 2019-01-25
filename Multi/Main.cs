@@ -1146,6 +1146,7 @@ namespace InfServer.Script.GameType_Multi
             StatsCurrent(victim).deaths++;
             //Update our base zone stats
             victim.Deaths++;
+            victim.ZoneStat1 = 0;
 
             //Now defer to our current gametype handler!
             switch (_gameType)
@@ -1185,6 +1186,7 @@ namespace InfServer.Script.GameType_Multi
 
                 killer.Kills++;
                 UpdateKiller(killer);
+                killer.ZoneStat1 = killer.Bounty;
 
                 StatsCurrent(killer).kills++;
                 long wepTick = StatsCurrent(killer).lastUsedWepTick;
