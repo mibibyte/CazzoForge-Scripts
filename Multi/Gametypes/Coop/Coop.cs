@@ -418,7 +418,7 @@ namespace InfServer.Script.GameType_Multi
 
         public bool playerUnspec(Player player)
         {
-            player.unspec(_team);
+            player.joinTeam(_team);
             return true;
         }
 

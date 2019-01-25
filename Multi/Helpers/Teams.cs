@@ -17,7 +17,7 @@ using Assets;
 namespace InfServer.Script.GameType_Multi
 {
     public static class TeamHelpers
-    { 
+    {
 
         public static void scrambleTeams(this Arena arena, IEnumerable<Player> unorderedPlayers, List<Team> teams, int maxPerTeam)
         {
@@ -45,11 +45,57 @@ namespace InfServer.Script.GameType_Multi
 
         public static void resetSkills(this Player player)
         {
-                for (int i = 0; i < 100; i++) // we gotta remove any class skills that already got
-                {
-                    if (player.findSkill(i) != null)
-                        player._skills.Remove(i);
-                }
+            for (int i = 0; i < 100; i++) // we gotta remove any class skills that already got
+            {
+                if (player.findSkill(i) != null)
+                    player._skills.Remove(i);
+            }
+        }
+
+        public static bool joinTeam(this Player player, Team team)
+        {
+            //Sanity checks
+            if (player._occupiedVehicle == null)
+            {
+                Log.write(TLog.Warning, "Attempted to unspectate with no spectator vehicle. {0}", player);
+                return false;
+            }
+
+            //Make sure our vehicle is a spectator mode vehicle
+            if (player._occupiedVehicle._type.Type != VehInfo.Types.Spectator)
+            {
+                Log.write(TLog.Warning, "Attempted to unspectate with non-spectator vehicle. {0}", player);
+                return false;
+            }
+
+            //Reset leftover variables
+            player._deathTime = 0;
+            player._lastMovement = Environment.TickCount;
+            player._maxTimeCalled = false;
+
+            //Throw ourselves onto our new team!
+            team.addPlayer(player);
+
+            //Destroy our spectator vehicle
+            player._occupiedVehicle.destroy(true);
+            player._bSpectator = false;
+
+            //Set relative vehicle if required, no need for any if statement here :]
+            VehInfo vehicle = player._server._assets.getVehicleByID(player.getDefaultVehicle().Id + player._server._zoneConfig.teams[team._id].relativeVehicle);
+            player.setDefaultVehicle(vehicle);
+
+            //Run the exit spec event
+            Logic_Assets.RunEvent(player, player._server._zoneConfig.EventInfo.exitSpectatorMode);
+
+            //Make sure the arena knows we've entered
+            player._arena.playerEnter(player);
+
+            if (player.ZoneStat1 > player._server._zoneConfig.bounty.start)
+                player.Bounty = player.ZoneStat1;
+            else
+                player.Bounty = player._server._zoneConfig.bounty.start;
+
+            return true;
         }
     }
 }
