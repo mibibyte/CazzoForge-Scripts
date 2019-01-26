@@ -42,7 +42,7 @@ namespace InfServer.Script.GameType_Multi
         public bool bGameLocked;
         public bool bAllPlayersReady;
 
-        private int _minPlayers = 7;				//The minimum amount of players
+        private int _minPlayers = 2;				//The minimum amount of players
         private int _gameCount = 0;
         private int _playersPerTeam = 1;
         private ItemInfo.RepairItem oobEffect = AssetManager.Manager.getItemByID(172) as ItemInfo.RepairItem;
@@ -120,17 +120,18 @@ namespace InfServer.Script.GameType_Multi
                 }
             }
 
-            if (_arena._bGameRunning && playing < 2 && _arena._bIsPublic && _victoryTeam == null)
+            if (_arena._bGameRunning && playing < _minPlayers && _arena._bIsPublic && _victoryTeam == null)
             {
                 _baseScript.bJackpot = false;
                 //Stop the game and reset voting
                 _arena.gameEnd();
 
             }
-            if (playing < 2 && _arena._bIsPublic)
+            if (playing < _minPlayers && _arena._bIsPublic)
             {
                 _baseScript._tickGameStarting = 0;
                 _arena.setTicker(1, 3, 0, "Not Enough Players");
+                bGameLocked = false;
             }
 
             if (playing < _minPlayers && !_arena._bIsPublic && !_arena._bGameRunning)
@@ -630,7 +631,7 @@ namespace InfServer.Script.GameType_Multi
 
             foreach (Player player in _arena.Players)
             {
-                if (!player.IsDead && !player.IsSpectator && _arena.PlayerCount >= _minPlayers)
+                if (!player.IsDead && !player.IsSpectator)
                     player.warp(1924*16, 347*16);
 
                 foreach (ItemInfo item in removes)
@@ -646,12 +647,8 @@ namespace InfServer.Script.GameType_Multi
                     }
                     
                 }
-                else if (_arena.PlayerCount < _minPlayers)
-                {
-                    pickOutTeam(player);
-                }
 
-                    if (player._team._name == "spec")
+                if (player._team._name == "spec")
                     continue;
 
                 if (!player.IsSpectator)
@@ -659,6 +656,8 @@ namespace InfServer.Script.GameType_Multi
 
                 if (_arena.PlayerCount >= _minPlayers)
                     player.unspec(player._team);
+
+                    //player.joinTeam(player._team); 
                 
             }
 
@@ -743,7 +742,7 @@ namespace InfServer.Script.GameType_Multi
             else if (_baseScript._tickGameStarting == 0 && _arena.PlayerCount < _minPlayers)
             {
                 pickOutTeam(player);
-                player.sendMessage(0, "A Royale Tournament will start when there are 7 or more players. Feel free to play Red vs Blue until then.");
+                //player.sendMessage(0, "A Royale Tournament will start when there are 2 or more players. Feel free to play Red vs Blue until then.");
             }
             else
                 pickTeam(player);
@@ -763,6 +762,7 @@ namespace InfServer.Script.GameType_Multi
                 if (player._team != _red)
                 {
                     player.unspec(_red);
+                    //player.joinTeam(_red);
                 }
             }
             else
@@ -770,6 +770,7 @@ namespace InfServer.Script.GameType_Multi
                 if (player._team != _blue)
                 {
                     player.unspec(_blue);
+                    //player.joinTeam(_blue);
                 }
             }
         }

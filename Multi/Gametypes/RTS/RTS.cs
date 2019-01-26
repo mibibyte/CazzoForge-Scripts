@@ -67,6 +67,8 @@ namespace InfServer.Script.GameType_Multi
             _collective = _arena.getTeamByName("Collective Military");
             _bots = new List<Bot>();
             _units = new Dictionary<ushort, Unit>();
+            _structures = new Dictionary<ushort, Structure>();
+            _items = new Dictionary<ushort, StoredItem>();
         }
 
         /// <summary>

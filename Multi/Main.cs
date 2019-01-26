@@ -1041,7 +1041,7 @@ namespace InfServer.Script.GameType_Multi
         public bool playerDeath(Player victim, Player killer, Helpers.KillType killType, CS_VehicleDeath update)
         {
             //Reset stored bounty
-            victim.ZoneStat1 = 0;
+            //victim.ZoneStat1 = 0;
            
             //Defer to our current gametype handler!
             switch (_gameType)
@@ -1050,6 +1050,7 @@ namespace InfServer.Script.GameType_Multi
                     _cq.playerDeath(victim, killer, killType, update);
                     break;
                 case Settings.GameTypes.Coop:
+                    victim.ZoneStat1 = 0;
                     _coop.playerDeath(victim, killer, killType, update);
                     break;
                 case Settings.GameTypes.Royale:
@@ -1084,7 +1085,7 @@ namespace InfServer.Script.GameType_Multi
             //Update stats
             killer.Kills++;
             victim.Deaths++;
-            killer.ZoneStat1 = killer.Bounty;
+            //killer.ZoneStat1 = killer.Bounty;
 
             //Update our kill streak
             UpdateKiller(killer);
@@ -1120,6 +1121,7 @@ namespace InfServer.Script.GameType_Multi
                     _cq.playerPlayerKill(victim, killer);
                     break;
                 case Settings.GameTypes.Coop:
+                    killer.ZoneStat1 = killer.Bounty;
                     _coop.playerPlayerKill(victim, killer);
                     break;
                 case Settings.GameTypes.Royale:
@@ -1146,7 +1148,7 @@ namespace InfServer.Script.GameType_Multi
             StatsCurrent(victim).deaths++;
             //Update our base zone stats
             victim.Deaths++;
-            victim.ZoneStat1 = 0;
+            //victim.ZoneStat1 = 0;
 
             //Now defer to our current gametype handler!
             switch (_gameType)
@@ -1155,6 +1157,7 @@ namespace InfServer.Script.GameType_Multi
                     _cq.playerDeathBot(victim, bot);
                     break;
                 case Settings.GameTypes.Coop:
+                    victim.ZoneStat1 = 0;
                     _coop.playerDeathBot(victim, bot);
                     break;
                 case Settings.GameTypes.RTS:
@@ -1186,7 +1189,7 @@ namespace InfServer.Script.GameType_Multi
 
                 killer.Kills++;
                 UpdateKiller(killer);
-                killer.ZoneStat1 = killer.Bounty;
+                //killer.ZoneStat1 = killer.Bounty;
 
                 StatsCurrent(killer).kills++;
                 long wepTick = StatsCurrent(killer).lastUsedWepTick;
@@ -1200,6 +1203,7 @@ namespace InfServer.Script.GameType_Multi
                         _cq.botDeath(dead, killer);
                         break;
                     case Settings.GameTypes.Coop:
+                        killer.ZoneStat1 = killer.Bounty;
                         _coop.botDeath(dead, killer);
                         break;
                     case Settings.GameTypes.RTS:
