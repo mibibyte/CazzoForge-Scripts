@@ -43,6 +43,9 @@ namespace InfServer.Script.GameType_Multi
         public const int c_baseScrapUpgrade = 25;
         public const double c_scrapUpgradeMultiplier = 1.56;
 
+
+        public const int c_maxStructures = 100;
+
         public enum DefenseProduction
         {
             Marine,

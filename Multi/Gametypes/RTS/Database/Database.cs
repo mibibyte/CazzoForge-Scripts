@@ -55,6 +55,28 @@ namespace InfServer.Script.GameType_Multi
             }
         }
 
+        public bool playerOwnsCity(Player player)
+        {
+            bool bResult = false;
+
+            bResult = _data.Count(data => player._alias == data.Value.SelectSingleNode("playerTable").Attributes["owner"].Value) > 0;
+
+            return bResult;
+        }
+
+        public string getOwner(string key)
+        {
+            if (!_data.ContainsKey(key))
+                return "";
+            else
+            {
+                //Grab the header
+                XmlNode header = _data[key].SelectSingleNode("playerTable");
+
+                return header.Attributes["name"].Value;
+            }
+        }
+
         public bool tableExists(string key)
         {
             if (!_data.ContainsKey(key))
@@ -63,7 +85,7 @@ namespace InfServer.Script.GameType_Multi
                 return true;
         }
 
-        public void createTable(string key)
+        public void createTable(string key, string owner)
         {
             string defaultFile = System.Environment.CurrentDirectory + "/Data/RTS/default.xml";
             string newFile = System.Environment.CurrentDirectory + "/Data/RTS/PlayerData/" + key + ".xml";
@@ -77,7 +99,7 @@ namespace InfServer.Script.GameType_Multi
 
             //Grab the header
             XmlNode header = newTable.SelectSingleNode("playerTable");
-            header.Attributes["name"].Value = key;
+            header.Attributes["name"].Value = owner;
 
             //Save it
             newTable.Save(newFile);

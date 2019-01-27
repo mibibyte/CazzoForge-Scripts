@@ -22,6 +22,13 @@ namespace InfServer.Script.GameType_Multi
         public bool tryBarracksMenu(Player player, Computer computer, VehInfo.Computer.ComputerProduct product, DefenseProduction type)
         {
             int idx = Convert.ToInt32(product.Title.Substring(0, 2));
+
+            if (_units.Count >= _botMax)
+            {
+                player.sendMessage(-1, "You have reach the maximum amount of units you can train/Have active at one time.");
+                return false;
+            }
+
             switch (idx)
             {
                 //1 - Train 1 Normal ($500)

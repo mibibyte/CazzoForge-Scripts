@@ -18,7 +18,7 @@ namespace InfServer.Script.GameType_Multi
     ///////////////////////////////////////////////////////
     public partial class RTS
     {
-        public int _botMax = 50;
+        public int _botMax = 20;
         public List<Bot> _bots;
         public List<Bot> _condemnedBots;
 

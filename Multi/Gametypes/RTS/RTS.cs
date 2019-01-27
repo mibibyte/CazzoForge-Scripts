@@ -26,6 +26,7 @@ namespace InfServer.Script.GameType_Multi
         private Random _rand;
 
         private int _lastGameCheck;				//The tick at which we last checked for game viability
+        public string _fileName;
         public string _owner;
         private Team _ownerTeam;
         public Database _database;
@@ -176,7 +177,7 @@ namespace InfServer.Script.GameType_Multi
             }
         }
 
-        public void init()
+        public void init(Player player)
         {
             _arena.gameStart();
 
@@ -184,12 +185,23 @@ namespace InfServer.Script.GameType_Multi
             _database = new Database(_arena, this);
             _database.loadXML();
 
-            //Figure out who owns the arena
-            _owner = _arena._name.Substring(5, _arena._name.Length - 5).TrimStart().ToLower();
+            //Find the associated filename in our database
+            _fileName = _arena._name.Substring(5, _arena._name.Length - 5).TrimStart().ToLower();
 
-            if (!_database.tableExists(_owner))
-                _database.createTable(_owner);
+            if (!_database.tableExists(_fileName))
+            {
+                if (!_database.playerOwnsCity(player))
+                {
+                    player.sendMessage(0, "&This city/arena is unowned. Press F12 if you would like to claim it");
+                }
+                else
+                {
+                    player.sendMessage(0, "This city/arena is unowned, however you already own a city.");
+                }
+                return;
+            }
 
+            _owner = _database.getOwner(_fileName);
             _structures = _database.loadStructures(_owner);
             _units = _database.loadBots(_owner);
             _items = _database.loadItems(_owner);
@@ -235,11 +247,11 @@ namespace InfServer.Script.GameType_Multi
                     player._permissionTemp = Data.PlayerPermission.Normal;
 
                 //Turn the lights on
-                init();
+                init(player);
             }
 
             if (player._alias.ToLower() == _owner)
-                player.sendMessage(0, "Welcome to your city!");
+                player.sendMessage(0, String.Format("Welcome home, {0}", player._alias));
 
             //Obtain the Co-Op skill..
             SkillInfo coopskillInfo = _arena._server._assets.getSkillByID(200);
@@ -323,6 +335,20 @@ namespace InfServer.Script.GameType_Multi
         /// </summary>
         public bool playerJoinGame(Player player)
         {
+            if (!_database.tableExists(_fileName))
+            {
+                if (_database.playerOwnsCity(player))
+                {
+                    player.sendMessage(-1, "You already own a city");
+                    return false;
+                }
+                _database.createTable(_fileName, player._alias);
+                player.sendMessage(0, "&You are now the owner of this city/arena. Exit the DS and place a Command Center to get started!");
+                player.sendMessage(0, "Quick Tip: Each building has a click for info option that will give a brief list of what each option in that building does");
+                player.unspec(_titan);
+                return true;
+            }
+
             if (player._alias.ToLower() == _owner)
             {
                 player.unspec(_titan);
@@ -426,8 +452,19 @@ namespace InfServer.Script.GameType_Multi
         public bool playerMakeVehicle(Player player, ItemInfo.VehicleMaker item, short posX, short posY)
         {
             int count = _arena.Vehicles.Count(veh => veh._type.Id == item.vehicleID);
+            int totalCount = _structures.Count;
             bool bSuccess = false;
             VehInfo vehicle = AssetManager.Manager.getVehicleByID(item.vehicleID);
+
+            //Max Structures?
+            if (totalCount >= c_maxStructures)
+            {
+                player.sendMessage(-1, "You have met or exceeded the maximum amount of structures allowed. " +
+                    "To build more, you must sell another building");
+
+                player.inventoryModify(item, 1);
+                return false;
+            }
 
             switch (item.vehicleID)
             {
@@ -545,10 +582,10 @@ namespace InfServer.Script.GameType_Multi
             return false;
         }
 
-            #endregion
+        #endregion
 
-            #region Command Handlers
-            public bool playerModcommand(Player player, Player recipient, string command, string payload)
+        #region Command Handlers
+        public bool playerModcommand(Player player, Player recipient, string command, string payload)
         {
             return true;
         }
