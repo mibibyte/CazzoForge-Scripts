@@ -144,13 +144,13 @@ namespace InfServer.Script.GameType_Multi
             if (!_arena._bGameRunning && _baseScript._tickGameStarting == 0 && playing >= _minPlayers && _arena._bIsPublic)
             {
                 _baseScript._tickGameStarting = now;
-                _arena.sendArenaMessage("New game starting in 30 seconds or less. Please unspec in the next 15 seconds to play in the next tournament.");
-               //Put 15 second locked timer in
+                gameSetup();
+                //Put 15 second locked timer in
 
                 _arena.setTicker(1, 3, 15 * 100, "Time until entrance into the tournament is locked: ",
                     delegate ()
                     {   //Trigger the game start
-                        gameSetup();                      
+                        bGameLocked = true;
                         _arena.setTicker(1, 3, 15 * 100, "Time until tournament starts: ",
 
                         delegate ()
@@ -184,14 +184,13 @@ namespace InfServer.Script.GameType_Multi
 
         public void gameSetup()
         {
+            _arena.sendArenaMessage("$A new game is starting in 30 seconds or less. Please unspec in the next 15 seconds to play in the next tournament.");
 
             foreach (Player player in _arena.PlayersIngame)
             {
                 if (player._team._name == "Red" || player._team._name == "Blue")
                     pickTeam(player);             
             }
-
-
 
             List<int> teamSizePickList = new List<int>();
             int playersToConsider = _arena.PlayerCount; // later adjust this for private teams.
@@ -233,7 +232,7 @@ namespace InfServer.Script.GameType_Multi
             int teamSizePick = teamSizePickList[randTeamSizePick.Next(teamSizePickList.Count)];
             _playersPerTeam = teamSizePick;
 
-            if (_gameCount >= 0) // change to 3 to scramble every 3 games. need to compare team size last game to this pick
+            if (_gameCount >= 2) // change to 3 to scramble every 3 games. need to compare team size last game to this pick
             {
                 _arena.sendArenaMessage("Teams have been scrambled");
                 _arena.scrambleTeams(_arena.PlayersIngame.Where(p => !p._team._isPrivate),
@@ -243,12 +242,32 @@ namespace InfServer.Script.GameType_Multi
                 _gameCount = 0;
             }
 
-            _arena.sendArenaMessage(String.Format("Teams are now locked for the upcoming tournament. " +
-                "Players will now have 15 seconds to pick classes before the tournament begins. " +
-                "Max team size for this game: {0}", _playersPerTeam));
-            _arena.sendArenaMessage("Game will start early by having all players 'Ready Up' by walking over a Dropship Portal.");
-            bGameLocked = true;
-            //_baseScript.AllowPrivateTeams(true);
+            //Even out any private teams that are OVER our current limit
+            foreach (Team team in _arena.ActiveTeams.Where(tm => tm._isPrivate))
+            {
+                List<Player> playersRemoved = new List<Player>();
+
+                //If they are within our parameter, ignore.
+                if (team.ActivePlayerCount <= _playersPerTeam)
+                    continue;
+
+                int numToRemove = team.ActivePlayerCount - _playersPerTeam;
+
+                for (int i = 1; i < numToRemove; i++)
+                {
+                    Player rndPlayer = team.ActivePlayers.PickRandom();
+                    if (rndPlayer == null)
+                        continue;
+
+                    pickTeam(rndPlayer);
+                    rndPlayer.sendMessage(0, "You've randomly been moved to a public team to keep teams even.");
+                }
+            }
+            
+            _arena.sendArenaMessage(String.Format("&--Max team size for this game: {0}", _playersPerTeam));
+            _arena.sendArenaMessage("&---Game will start early by having all players 'Ready Up' by walking over a Dropship Portal.");
+
+            _baseScript.AllowPrivateTeams(true, _playersPerTeam);
         }
 
         public void checkForwinner(int now)
@@ -523,7 +542,7 @@ namespace InfServer.Script.GameType_Multi
             _tickLastReadyCheck = 0;
             _tickLastShrink = Environment.TickCount;
             _victoryTeam = null;
-            //_baseScript.AllowPrivateTeams(false); Re-enable when private teams are allowed.
+            _baseScript.AllowPrivateTeams(false, 1);
             _activeTeams.Clear();
 
             List<ItemInfo> removes = AssetManager.Manager.getItems.Where(itm => itm.name.EndsWith("(BR)")).ToList();

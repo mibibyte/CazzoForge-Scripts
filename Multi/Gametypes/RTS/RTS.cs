@@ -584,22 +584,6 @@ namespace InfServer.Script.GameType_Multi
 
         #endregion
 
-        #region Command Handlers
-        public bool playerModcommand(Player player, Player recipient, string command, string payload)
-        {
-            return true;
-        }
-
-        public bool playerChatCommand(Player player, Player recipient, string command, string payload)
-        {
-            if (command.Equals("test"))
-            {
-                newBot(_titan, BotType.Marine, null, player, BotLevel.Normal, player._state);
-            }
-            return true;
-        }
-        #endregion
-
         #region Private Routines
         public void newStructure(Vehicle veh, Player player)
         {

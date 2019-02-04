@@ -251,10 +251,6 @@ namespace InfServer.Script.GameType_Multi
                 }
             }
 
-            //Incase we get lost...
-            if (!bHealing && !bAttacking && !BFollowing)
-                destroy(true);
-
 
             if (_target != null)
                 followPlayer(now);
@@ -282,6 +278,9 @@ namespace InfServer.Script.GameType_Multi
                 return false;
 
             if (_arena.getTerrain(target._state.positionX, target._state.positionY).safety)
+                return false;
+
+            if (_game._targetedPlayers.Where(t => t.Key != _id && t.Value == target).Count() > 0)
                 return false;
 
             if (target._occupiedVehicle != null)

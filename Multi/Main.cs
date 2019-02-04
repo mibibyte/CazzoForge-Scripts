@@ -1992,10 +1992,11 @@ namespace InfServer.Script.GameType_Multi
         #endregion
 
         #region Custom Calls
-        public void AllowPrivateTeams(bool bAllow)
+        public void AllowPrivateTeams(bool bAllow, int maxSize)
         {
             _arena._server._zoneConfig.arena.allowManualTeamSwitch = bAllow;
             _arena._server._zoneConfig.arena.allowPrivateFrequencies = bAllow;
+            _arena._server._zoneConfig.arena.maxPerFrequency = maxSize;
             _arena.sendArenaMessage(String.Format("Private Teams/Team switching is now {0}", ((bAllow) ? "enabled" : "disabled")));
         }
 
